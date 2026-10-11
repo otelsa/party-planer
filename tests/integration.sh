@@ -67,7 +67,6 @@ grep -qi 'Cookie' <<<"$page"        && pass "Seite erklaert das Cookie" || fail 
 grep -q 'Link aus der WhatsApp-Gruppe' <<<"$page" && pass "Hinweis zum Gruppenlink" || fail "Hinweis fehlt"
 grep -q 'name="csrf"' <<<"$page"    && pass "Formulare tragen ein CSRF-Token" || fail "CSRF-Token fehlt"
 grep -q 'id="live" data-stand=' <<<"$page" && pass "veraenderlicher Teil ist abgegrenzt" || fail "Bereich 'live' fehlt"
-grep -q 'class="namen"' <<<"$page" && pass "Gaeste stehen als fortlaufende Liste" || fail "fortlaufende Namensliste fehlt"
 grep -q 'src="/e/party.js"' <<<"$page" && pass "Seite laedt das Aktualisierungs-Skript" || fail "Skript fehlt"
 grep -qi '<title>Einladung</title>' <<<"$page" && pass "neutraler Titel" || fail "Titel verraet etwas"
 grep -qi 'og:image' <<<"$page"      && fail "og:image wuerde ein Vorschaubild zeigen" || pass "kein Vorschaubild"
@@ -163,6 +162,7 @@ if [ "${FLOW:-0}" = "1" ]; then
   grep -q 'Testsalat' <<<"$seite_b" && pass "B sieht das Mitbringsel von A" || fail "Mitbringsel fehlt bei B"
 
   # Gruppierung: A kommt ab Beginn, B hat "vielleicht" gewaehlt.
+  grep -q 'class="namen"' <<<"$seite_a" && pass "Gaeste stehen als fortlaufende Liste" || fail "fortlaufende Namensliste fehlt"
   grep -q 'gruppe__titel">Kommt' <<<"$seite_a" && pass "Gruppe 'Kommt' vorhanden" || fail "Gruppe 'Kommt' fehlt"
   grep -q 'gruppe__titel">Vielleicht' <<<"$seite_a" && pass "Gruppe 'Vielleicht' vorhanden" || fail "Gruppe 'Vielleicht' fehlt"
   awk '/gruppe__titel">Vielleicht/,/<\/div>/' <<<"$seite_a" | grep -q 'Test B' \
