@@ -39,8 +39,14 @@ sudo scripts/deploy.sh
 Die Hinweisseite antwortet bewusst mit 200 statt 404: Tippfehler lösen so keine
 fail2ban-Sperre aus. Preis dafür ist, dass `/e/` als existierender Bereich erkennbar ist.
 
-Tokens stehen in keinem Log: `/e/`-Pfade werden im Hauptlog maskiert, die Partyseite
-schreibt zusätzlich nach `/var/log/nginx/party.log` mit `/e/<token>` statt dem Wert.
+Tokens stehen in keinem Log:
+
+- Hauptlog: `/e/`-Pfade werden maskiert (`map` in `deploy/nginx/log-format.conf`), auch bei
+  Antworten, die auf Serverebene entstehen (etwa 405 bei POST).
+- Zugriffe der Partyseite: `/var/log/nginx/party.log`, Pfad immer als `/e/<token>`.
+- Fehlerlog: eigenes `party-error.log` ab Stufe `crit`. nginx schreibt Rate-Limit-Treffer
+  sonst mit vollständiger URL ins Fehlerlog — das wäre der Token im Klartext.
+  `limit_req_log_level info` hält diese Meldungen aus dem Log, das Limit selbst wirkt weiter.
 
 ## Tests
 

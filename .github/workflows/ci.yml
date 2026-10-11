@@ -30,7 +30,9 @@ jobs:
         run: shellcheck -S warning scripts/*.sh tests/*.sh
 
       - name: HTML- und CSS-Validierung (Nu Html Checker)
-        run: pipx run html5validator==0.4.2 --root site --also-check-css --format text
+        # Ohne --also-check-css: der Nu-Validator kennt color-scheme,
+        # text-underline-offset und weitere aktuelle Eigenschaften noch nicht.
+        run: pipx run html5validator==0.4.2 --root site --format text
 
   server:
     name: nginx-Verhalten (Debian trixie)
@@ -80,4 +82,4 @@ jobs:
 
       - name: Logs bei Fehlschlag
         if: failure()
-        run: tail -n 40 /var/log/nginx/error.log /var/log/nginx/access.log /var/log/nginx/party.log || true
+        run: tail -n 40 /var/log/nginx/*.log || true

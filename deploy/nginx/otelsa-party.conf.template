@@ -9,6 +9,9 @@
 #                      exakte locations, weil das ^~-Praefix unten regulaere Ausdruecke schlagen wuerde
 #   /e/<alles>      -> neutrale Hinweisseite mit 200, damit Tippfehler keine fail2ban-Sperre
 #                      ausloesen und nichts ueber die Existenz der Seite verraten wird
+#
+# Logs: Zugriffe nach party.log (ohne Token), Fehler nach party-error.log ab "crit";
+# Rate-Limit-Meldungen wuerden sonst die vollstaendige URL mit dem Token enthalten.
 
 # Kopfzeilen: add_header in einer location ersetzt die des Servers, deshalb hier vollstaendig.
 # default-src 'none' + style-src 'self': kein JavaScript, keine fremden Quellen.
@@ -18,10 +21,18 @@ location = /e/@TOKEN@ {
     try_files /index.html =404;
     include /etc/nginx/snippets/otelsa-party-headers.conf;
     access_log /var/log/nginx/party.log party;
+    # nginx schreibt Rate-Limit-Meldungen samt URL ins Fehlerlog - das waere der Token.
+    # Deshalb hier ein eigenes Fehlerlog ab Stufe "crit" und Limit-Meldungen auf "info".
+    limit_req_log_level info;
+    error_log /var/log/nginx/party-error.log crit;
 }
 
 location = /e/@TOKEN@/ {
     access_log /var/log/nginx/party.log party;
+    # nginx schreibt Rate-Limit-Meldungen samt URL ins Fehlerlog - das waere der Token.
+    # Deshalb hier ein eigenes Fehlerlog ab Stufe "crit" und Limit-Meldungen auf "info".
+    limit_req_log_level info;
+    error_log /var/log/nginx/party-error.log crit;
     return 301 https://$host/e/@TOKEN@;
 }
 
@@ -30,18 +41,30 @@ location = /e/otelsa-tokens.css {
     try_files /otelsa-tokens.css =404;
     include /etc/nginx/snippets/otelsa-party-headers.conf;
     access_log /var/log/nginx/party.log party;
+    # nginx schreibt Rate-Limit-Meldungen samt URL ins Fehlerlog - das waere der Token.
+    # Deshalb hier ein eigenes Fehlerlog ab Stufe "crit" und Limit-Meldungen auf "info".
+    limit_req_log_level info;
+    error_log /var/log/nginx/party-error.log crit;
 }
 location = /e/otelsa-components.css {
     root /var/www/otelsa/party/e;
     try_files /otelsa-components.css =404;
     include /etc/nginx/snippets/otelsa-party-headers.conf;
     access_log /var/log/nginx/party.log party;
+    # nginx schreibt Rate-Limit-Meldungen samt URL ins Fehlerlog - das waere der Token.
+    # Deshalb hier ein eigenes Fehlerlog ab Stufe "crit" und Limit-Meldungen auf "info".
+    limit_req_log_level info;
+    error_log /var/log/nginx/party-error.log crit;
 }
 location = /e/party.css {
     root /var/www/otelsa/party/e;
     try_files /party.css =404;
     include /etc/nginx/snippets/otelsa-party-headers.conf;
     access_log /var/log/nginx/party.log party;
+    # nginx schreibt Rate-Limit-Meldungen samt URL ins Fehlerlog - das waere der Token.
+    # Deshalb hier ein eigenes Fehlerlog ab Stufe "crit" und Limit-Meldungen auf "info".
+    limit_req_log_level info;
+    error_log /var/log/nginx/party-error.log crit;
 }
 
 location = /e/invalid.css {
@@ -49,6 +72,10 @@ location = /e/invalid.css {
     try_files /invalid.css =404;
     include /etc/nginx/snippets/otelsa-party-headers.conf;
     access_log /var/log/nginx/party.log party;
+    # nginx schreibt Rate-Limit-Meldungen samt URL ins Fehlerlog - das waere der Token.
+    # Deshalb hier ein eigenes Fehlerlog ab Stufe "crit" und Limit-Meldungen auf "info".
+    limit_req_log_level info;
+    error_log /var/log/nginx/party-error.log crit;
 }
 
 location ^~ /e/ {
@@ -56,4 +83,8 @@ location ^~ /e/ {
     try_files /index.html =404;
     include /etc/nginx/snippets/otelsa-party-headers.conf;
     access_log /var/log/nginx/party.log party;
+    # nginx schreibt Rate-Limit-Meldungen samt URL ins Fehlerlog - das waere der Token.
+    # Deshalb hier ein eigenes Fehlerlog ab Stufe "crit" und Limit-Meldungen auf "info".
+    limit_req_log_level info;
+    error_log /var/log/nginx/party-error.log crit;
 }

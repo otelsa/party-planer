@@ -99,6 +99,11 @@ if [ -r "$PARTY_LOG" ]; then
 else
   printf 'übersprungen: %s nicht lesbar\n' "$PARTY_LOG"
 fi
+# nginx schreibt Rate-Limit-Treffer samt URL ins Fehlerlog: hier darf nichts stehen.
+if [ -r /var/log/nginx ]; then
+  found=$(grep -rl "$TOKEN" /var/log/nginx/ 2>/dev/null || true)
+  [ -z "$found" ] && pass "kein Token in /var/log/nginx" || fail "Token in: $found"
+fi
 
 echo
 [ "$fails" -eq 0 ] && echo "alle Tests bestanden" || { echo "$fails Test(s) fehlgeschlagen"; exit 1; }
