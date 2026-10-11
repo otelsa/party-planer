@@ -1,0 +1,193 @@
+/* OTELSA UI components - version 1.0.0
+ * Requires otelsa-tokens.css. Class prefix: ot-
+ * Derived from the Noomi Bridge Panel so existing plugins migrate by renaming classes.
+ */
+
+*, *::before, *::after { box-sizing: border-box; }
+
+.ot-app {
+  margin: 0;
+  min-height: 100vh;
+  background: radial-gradient(120rem 70rem at 50% -10%, var(--ot-bg-glow) 0%, var(--ot-bg) 60%) fixed;
+  color: var(--ot-fg);
+  font-family: var(--ot-font);
+  font-size: var(--ot-text-md);
+  line-height: 1.45;
+  -webkit-font-smoothing: antialiased;
+}
+
+.ot-app :focus-visible { outline: var(--ot-focus); outline-offset: 2px; }
+
+/* ---------------- layout ---------------- */
+
+.ot-grid {
+  display: grid;
+  gap: var(--ot-space-5);
+  grid-template-columns: repeat(auto-fit, minmax(var(--ot-card-min), 1fr));
+  align-items: start;
+}
+
+/* ---------------- card ---------------- */
+
+.ot-card {
+  background: var(--ot-surface);
+  border: 1px solid var(--ot-line);
+  border-radius: var(--ot-radius-lg);
+  padding: var(--ot-space-5);
+  min-width: 0;
+}
+
+.ot-card__title {
+  margin: 0 0 var(--ot-space-4);
+  display: flex;
+  align-items: baseline;
+  gap: var(--ot-space-2);
+  font-size: 0.82rem;
+  font-weight: var(--ot-weight-medium);
+  letter-spacing: var(--ot-tracking-caps);
+  text-transform: uppercase;
+  color: var(--ot-heading);
+}
+
+.ot-card__note {
+  font-size: var(--ot-text-xs);
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--ot-fg-faint);
+}
+
+.ot-card--alert { border-color: var(--ot-bad); background: linear-gradient(180deg, var(--ot-bad-bg), var(--ot-surface) 60%); }
+.ot-card--warn  { border-color: var(--ot-warn); background: linear-gradient(180deg, var(--ot-warn-bg), var(--ot-surface) 60%); }
+
+/* ---------------- values ---------------- */
+
+.ot-num { font-family: var(--ot-font-num); font-variant-numeric: tabular-nums; }
+
+.ot-value {
+  font-family: var(--ot-font-num);
+  font-variant-numeric: tabular-nums;
+  font-size: var(--ot-text-value);
+  font-weight: var(--ot-weight-medium);
+  letter-spacing: -0.01em;
+  line-height: 1.1;
+}
+
+.ot-unit { margin-left: 0.2em; font-size: 0.55em; color: var(--ot-fg-dim); font-family: var(--ot-font); }
+
+/* stale: dimmed + dotted underline (no symbol glyphs - they may render as colour emoji) */
+.ot-stale { color: var(--ot-fg-faint); text-decoration: underline dotted; text-underline-offset: 0.2em; }
+
+/* key/value rows */
+.ot-rows { list-style: none; margin: 0; padding: 0; }
+.ot-rows > li {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--ot-space-4);
+  padding: 0.42rem 0;
+  border-bottom: 1px solid var(--ot-line);
+  font-size: 1.05rem;
+}
+.ot-rows > li:last-child { border-bottom: 0; }
+.ot-rows .ot-k { color: var(--ot-fg-dim); }
+.ot-rows .ot-v { font-family: var(--ot-font-num); font-variant-numeric: tabular-nums; text-align: right; }
+.ot-rows > li.is-bad .ot-k, .ot-rows > li.is-bad .ot-v { color: var(--ot-bad); font-weight: var(--ot-weight-bold); }
+.ot-rows > li.is-warn .ot-v { color: var(--ot-warn); }
+
+/* stacked list (title + meta) */
+.ot-list { list-style: none; margin: 0; padding: 0; }
+.ot-list > li { padding: var(--ot-space-2) 0; border-bottom: 1px solid var(--ot-line); }
+.ot-list > li:last-child { border-bottom: 0; }
+.ot-meta { display: block; margin-top: 0.15rem; font-size: 0.86rem; color: var(--ot-fg-faint); }
+
+.ot-empty { color: var(--ot-fg-faint); }
+
+/* ---------------- status ---------------- */
+
+.ot-dot {
+  display: inline-block;
+  width: 0.6rem;
+  height: 0.6rem;
+  border-radius: 50%;
+  background: var(--ot-off);
+  vertical-align: middle;
+}
+.ot-dot--live  { background: var(--ot-ok); }
+.ot-dot--stale { background: var(--ot-warn); }
+.ot-dot--down  { background: var(--ot-bad); }
+
+.ot-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--ot-space-1);
+  padding: 0.1rem 0.55rem;
+  border: 1px solid var(--ot-line-strong);
+  border-radius: var(--ot-radius-pill);
+  font-size: var(--ot-text-xs);
+  color: var(--ot-fg-dim);
+}
+.ot-tag--ok   { border-color: var(--ot-ok);   color: var(--ot-ok); }
+.ot-tag--warn { border-color: var(--ot-warn); color: var(--ot-warn); }
+.ot-tag--bad  { border-color: var(--ot-bad);  color: var(--ot-bad); font-weight: var(--ot-weight-bold); }
+
+.ot-banner {
+  padding: var(--ot-space-3) var(--ot-space-4);
+  border: 1px solid var(--ot-warn);
+  border-radius: var(--ot-radius-md);
+  background: var(--ot-warn-bg);
+}
+.ot-banner--bad { border-color: var(--ot-bad); background: var(--ot-bad-bg); font-weight: var(--ot-weight-medium); }
+
+/* ---------------- controls ---------------- */
+
+.ot-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--ot-space-2);
+  min-height: var(--ot-touch);
+  min-width: var(--ot-touch);
+  padding: 0 var(--ot-space-4);
+  border: 1px solid var(--ot-line-strong);
+  border-radius: var(--ot-radius-sm);
+  background: var(--ot-surface-2);
+  color: var(--ot-fg);
+  font: inherit;
+  font-weight: var(--ot-weight-medium);
+  cursor: pointer;
+  transition: background var(--ot-transition), border-color var(--ot-transition);
+}
+.ot-btn:hover { border-color: var(--ot-fg-faint); }
+.ot-btn--primary { background: var(--ot-accent); border-color: var(--ot-accent); color: var(--ot-accent-fg); }
+.ot-btn--danger  { background: transparent; border-color: var(--ot-bad); color: var(--ot-bad); }
+.ot-btn[disabled], .ot-btn[aria-disabled="true"] { opacity: 0.45; cursor: not-allowed; }
+
+/* segmented control (e.g. autopilot mode, units, day/dark/night) */
+.ot-seg {
+  display: inline-flex;
+  padding: 0.2rem;
+  gap: 0.2rem;
+  border: 1px solid var(--ot-line);
+  border-radius: var(--ot-radius-sm);
+  background: var(--ot-surface-2);
+}
+.ot-seg > button {
+  min-height: calc(var(--ot-touch) - 0.4rem);
+  padding: 0 var(--ot-space-3);
+  border: 0;
+  border-radius: calc(var(--ot-radius-sm) - 0.15rem);
+  background: transparent;
+  color: var(--ot-fg-dim);
+  font: inherit;
+  cursor: pointer;
+}
+.ot-seg > button[aria-pressed="true"] { background: var(--ot-surface); color: var(--ot-fg); box-shadow: 0 0 0 1px var(--ot-line-strong); }
+
+@media (prefers-reduced-motion: reduce) {
+  .ot-app * { transition: none !important; animation: none !important; }
+}
+
+@media (max-width: 600px) {
+  .ot-card { padding: 1.15rem; }
+  .ot-grid { gap: var(--ot-space-4); }
+}

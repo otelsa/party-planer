@@ -1,0 +1,59 @@
+# Partyseite (Prototyp) - eingebunden im otelsa.de-443-Server.
+# @TOKEN@ wird von scripts/deploy.sh aus /etc/otelsa-party-token eingesetzt;
+# die erzeugte Datei enthaelt das Geheimnis und gehoert NICHT ins Git.
+#
+# Aufteilung:
+#   /e/@TOKEN@      -> die Seite (ohne Schraegstrich: schoener Link, relative CSS-Pfade
+#                      loesen gegen /e/ auf)
+#   /e/*.css        -> Stylesheets, ohne Token (sonst stehen sie im Referer der Seite);
+#                      exakte locations, weil das ^~-Praefix unten regulaere Ausdruecke schlagen wuerde
+#   /e/<alles>      -> neutrale Hinweisseite mit 200, damit Tippfehler keine fail2ban-Sperre
+#                      ausloesen und nichts ueber die Existenz der Seite verraten wird
+
+# Kopfzeilen: add_header in einer location ersetzt die des Servers, deshalb hier vollstaendig.
+# default-src 'none' + style-src 'self': kein JavaScript, keine fremden Quellen.
+# form-action 'self' ist fuer die spaetere App schon gesetzt.
+location = /e/@TOKEN@ {
+    root /var/www/otelsa/party/e;
+    try_files /index.html =404;
+    include /etc/nginx/snippets/otelsa-party-headers.conf;
+    access_log /var/log/nginx/party.log party;
+}
+
+location = /e/@TOKEN@/ {
+    access_log /var/log/nginx/party.log party;
+    return 301 https://$host/e/@TOKEN@;
+}
+
+location = /e/otelsa-tokens.css {
+    root /var/www/otelsa/party/e;
+    try_files /otelsa-tokens.css =404;
+    include /etc/nginx/snippets/otelsa-party-headers.conf;
+    access_log /var/log/nginx/party.log party;
+}
+location = /e/otelsa-components.css {
+    root /var/www/otelsa/party/e;
+    try_files /otelsa-components.css =404;
+    include /etc/nginx/snippets/otelsa-party-headers.conf;
+    access_log /var/log/nginx/party.log party;
+}
+location = /e/party.css {
+    root /var/www/otelsa/party/e;
+    try_files /party.css =404;
+    include /etc/nginx/snippets/otelsa-party-headers.conf;
+    access_log /var/log/nginx/party.log party;
+}
+
+location = /e/invalid.css {
+    root /var/www/otelsa/party/invalid;
+    try_files /invalid.css =404;
+    include /etc/nginx/snippets/otelsa-party-headers.conf;
+    access_log /var/log/nginx/party.log party;
+}
+
+location ^~ /e/ {
+    root /var/www/otelsa/party/invalid;
+    try_files /index.html =404;
+    include /etc/nginx/snippets/otelsa-party-headers.conf;
+    access_log /var/log/nginx/party.log party;
+}

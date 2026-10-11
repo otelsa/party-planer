@@ -1,0 +1,166 @@
+/* OTELSA UI tokens - version 1.0.0
+ *
+ * The single source for colours, type, spacing and shape in every OTELSA / Noomi
+ * web UI (Bridge shell, plugin webapps, future apps). Include this file and use the
+ * variables. Do not copy hex values into plugin CSS.
+ *
+ * Modes (set on <html> by the Bridge shell or the standalone helper):
+ *   data-ot-mode="dark"   default, cabin and chart table
+ *   data-ot-mode="day"    bright sunlight in the cockpit
+ *   data-ot-mode="night"  red, preserves night vision on watch
+ * Without the attribute, dark is used (prefers-color-scheme: light selects day).
+ *
+ * Custom properties inherit through shadow DOM, so web-component modules get the
+ * active mode automatically.
+ */
+
+:root,
+[data-ot-mode="dark"] {
+  color-scheme: dark;
+
+  --ot-bg: #06111b;
+  --ot-bg-glow: #0e2233;
+  --ot-surface: #0d1b28;
+  --ot-surface-2: #132638;
+  --ot-line: #1d3144;
+  --ot-line-strong: #2a4459;
+
+  --ot-fg: #e8eef2;
+  --ot-fg-dim: #98abba;
+  --ot-fg-faint: #6a7f90;
+  --ot-heading: #86aecd;
+
+  --ot-accent: #e0b36a;
+  --ot-accent-fg: #06111b;
+  --ot-link: #8cc8f0;
+
+  --ot-ok: #3cc47c;
+  --ot-warn: #f2a541;
+  --ot-bad: #f0625d;
+  --ot-off: #64788a;
+  --ot-bad-bg: #2a1418;
+  --ot-warn-bg: #2a2214;
+}
+
+@media (prefers-color-scheme: light) {
+  :root:not([data-ot-mode]) {
+    color-scheme: light;
+    --ot-bg: #eef3f6;
+    --ot-bg-glow: #ffffff;
+    --ot-surface: #ffffff;
+    --ot-surface-2: #e6edf2;
+    --ot-line: #d3dee6;
+    --ot-line-strong: #b4c4cf;
+    --ot-fg: #071624;
+    --ot-fg-dim: #3b5364;
+    --ot-fg-faint: #687d8c;
+    --ot-heading: #1c4d70;
+    --ot-accent: #8a5a12;
+    --ot-accent-fg: #ffffff;
+    --ot-link: #0b5c99;
+    --ot-ok: #0f7a43;
+    --ot-warn: #9a5b00;
+    --ot-bad: #c1121f;
+    --ot-off: #6b7f8e;
+    --ot-bad-bg: #fbe6e8;
+    --ot-warn-bg: #fbeedd;
+  }
+}
+
+[data-ot-mode="day"] {
+  color-scheme: light;
+
+  --ot-bg: #eef3f6;
+  --ot-bg-glow: #ffffff;
+  --ot-surface: #ffffff;
+  --ot-surface-2: #e6edf2;
+  --ot-line: #d3dee6;
+  --ot-line-strong: #b4c4cf;
+
+  --ot-fg: #071624;
+  --ot-fg-dim: #3b5364;
+  --ot-fg-faint: #687d8c;
+  --ot-heading: #1c4d70;
+
+  --ot-accent: #8a5a12;
+  --ot-accent-fg: #ffffff;
+  --ot-link: #0b5c99;
+
+  --ot-ok: #0f7a43;
+  --ot-warn: #9a5b00;
+  --ot-bad: #c1121f;
+  --ot-off: #6b7f8e;
+  --ot-bad-bg: #fbe6e8;
+  --ot-warn-bg: #fbeedd;
+}
+
+[data-ot-mode="night"] {
+  color-scheme: dark;
+
+  --ot-bg: #000000;
+  --ot-bg-glow: #0a0000;
+  --ot-surface: #080000;
+  --ot-surface-2: #140000;
+  --ot-line: #2a0505;
+  --ot-line-strong: #440909;
+
+  --ot-fg: #ff3b30;
+  --ot-fg-dim: #d42a22;
+  --ot-fg-faint: #a01e18;
+  --ot-heading: #d42a22;
+
+  --ot-accent: #ff3b30;
+  --ot-accent-fg: #000000;
+  --ot-link: #ff3b30;
+
+  /* In night mode everything is red. States are told apart by weight, icon and
+     the filled alert background - never by hue. */
+  --ot-ok: #d42a22;
+  --ot-warn: #ff3b30;
+  --ot-bad: #ff5a4f;
+  --ot-off: #7a1712;
+  --ot-bad-bg: #3a0000;
+  --ot-warn-bg: #200000;
+}
+
+/* ---- mode-independent tokens ---- */
+:root {
+  --ot-font: -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, Roboto, system-ui, sans-serif;
+  --ot-font-num: ui-monospace, "SF Mono", "JetBrains Mono", Menlo, Consolas, monospace;
+
+  /* type scale (rem; the shell scales the root font size with the screen) */
+  --ot-text-xs: 0.78rem;
+  --ot-text-sm: 0.88rem;
+  --ot-text-md: 1rem;
+  --ot-text-lg: 1.25rem;
+  --ot-text-xl: 1.6rem;
+  --ot-text-value: clamp(1.9rem, 3.4vw, 2.8rem);
+  --ot-weight-regular: 400;
+  --ot-weight-medium: 500;
+  --ot-weight-bold: 650;
+  --ot-tracking-caps: 0.12em;
+
+  /* spacing (4-point grid) */
+  --ot-space-1: 0.25rem;
+  --ot-space-2: 0.5rem;
+  --ot-space-3: 0.75rem;
+  --ot-space-4: 1rem;
+  --ot-space-5: 1.5rem;
+  --ot-space-6: 2rem;
+
+  /* shape */
+  --ot-radius-sm: 0.5rem;
+  --ot-radius-md: 0.7rem;
+  --ot-radius-lg: 1.1rem;
+  --ot-radius-pill: 999px;
+
+  /* interaction */
+  --ot-touch: 2.75rem;          /* minimum touch target (wet hands, gloves, swell) */
+  --ot-focus: 2px solid var(--ot-link);
+  --ot-transition: 150ms ease-out;
+
+  /* layout */
+  --ot-card-min: 21rem;
+  --ot-shell-bar: 3.5rem;
+  --ot-status-strip: 4.5rem;
+}
