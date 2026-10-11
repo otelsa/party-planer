@@ -27,6 +27,21 @@ bash tests/static-checks.sh
 sudo scripts/deploy.sh
 ```
 
+## Wie Teilnehmer erkannt werden
+
+**Ohne Cookie, ohne Geräte-ID.** Die Identität ist der persönliche Link `/me/<token>`
+(128 Bit Zufall). Wer ihn hat, sieht und ändert genau seine eigenen Einträge; alles andere
+ist nur lesbar. Jeder eigene Eintrag trägt in den Listen ein Bearbeiten- und ein Löschsymbol.
+
+- **Wiederkommen:** Der Link wird nach dem Anmelden angezeigt, mit „an mich selbst schicken“.
+- **Verloren:** Ein Admin erzeugt einen neuen, der alte verfällt.
+- **Bewusst nicht benutzt:** Cookies, `localStorage` (rechtlich wie ein Cookie und bräuchte
+  JavaScript) und Geräte-Fingerprints (unzuverlässig und datenschutzrechtlich schlechter).
+- **Preis:** Der Token steht in der Adresszeile und damit im Browserverlauf des Geräts.
+
+Im Anmeldeformular gibt es nur **„Anzeigen als“** und **„Anzahl“** (Personen insgesamt,
+die Person selbst mitgezählt). Die Gesamtzahl auf der Seite summiert diese Angaben.
+
 ## Wie der Zugang funktioniert
 
 | Pfad | Antwort |

@@ -65,31 +65,18 @@
       </fieldset>
 
       <fieldset>
-        <legend>Wie sollen dich die anderen sehen?</legend>
-        <div class="choices choices--stack">
-          <label class="choice"><input type="radio" name="sichtbar" checked disabled>
-            <span>Mit Namen: <strong>Anna K.</strong> <em>(Vorname und erster Buchstabe)</em></span></label>
-          <label class="choice"><input type="radio" name="sichtbar" disabled>
-            <span>Nur Vorname: <strong>Anna</strong></span></label>
-          <label class="choice"><input type="radio" name="sichtbar" disabled>
-            <span>Gar nicht: zählt nur in der Gesamtzahl mit</span></label>
-        </div>
-        <label class="labelled">Anzeigename
+        <legend>Deine Angaben</legend>
+        <label class="labelled">Anzeigen als
           <input class="field" type="text" value="Anna K." maxlength="40" disabled>
         </label>
-      </fieldset>
-
-      <fieldset>
-        <legend>Begleitung</legend>
-        <label class="labelled">Anzahl
-          <input class="field field--num" type="number" value="1" min="0" max="5" disabled>
-        </label>
-        <label class="labelled">Vornamen <em>(freiwillig)</em>
-          <input class="field" type="text" value="Jonas" maxlength="40" disabled>
+        <label class="labelled">Anzahl <em>(Personen insgesamt, du mitgezählt)</em>
+          <input class="field field--num" type="number" value="2" min="1" max="6" disabled>
         </label>
       </fieldset>
 
       <p id="proto-hint" class="note">Im Prototyp sind alle Felder gesperrt.</p>
+      <p class="note">Diese Seite benutzt keine Cookies. Nach dem Speichern bekommst du deinen
+        persönlichen Link — damit kommst du jederzeit zurück und änderst deine Angaben.</p>
       <div class="actions">
         <span class="ot-btn ot-btn--primary" aria-disabled="true">Speichern</span>
         <span class="ot-btn" aria-disabled="true">Meine Daten löschen</span>
@@ -97,25 +84,41 @@
     </form>
   </section>
 
+  <section class="ot-card" id="zugang">
+    <h2 class="ot-card__title">Dein Zugang <span class="ot-card__note">statt Cookie</span></h2>
+    <p class="note">Mit diesem persönlichen Link kommst du zurück und änderst deine Angaben —
+      auch von einem anderen Gerät. Nur du hast ihn. Bitte nicht weitergeben.</p>
+    <p class="link"><code>https://otelsa.de/me/&lt;dein-link&gt;</code></p>
+    <div class="actions">
+      <span class="ot-btn ot-btn--primary" aria-disabled="true">An mich selbst schicken</span>
+      <span class="ot-btn" aria-disabled="true">Link kopieren</span>
+    </div>
+    <p class="note">Verloren? Frag einen der Organisatoren, dann bekommst du einen neuen.</p>
+  </section>
+
   <section class="ot-card" id="zahlen">
     <h2 class="ot-card__title">Wie viele kommen</h2>
     <div class="counts">
       <div class="count"><span class="ot-value">34</span><span class="count__lbl">Personen gesamt</span></div>
-      <div class="count"><span class="ot-value">23</span><span class="count__lbl">Zusagen</span></div>
-      <div class="count"><span class="ot-value">11</span><span class="count__lbl">Begleitungen</span></div>
+      <div class="count"><span class="ot-value">23</span><span class="count__lbl">Anmeldungen</span></div>
       <div class="count"><span class="ot-value">4</span><span class="count__lbl">Vielleicht</span></div>
     </div>
-    <p class="note">Die Gesamtzahl zählt alle mit, auch wer ohne Namen bleibt.</p>
+    <p class="note">Die Gesamtzahl zählt jede angemeldete Person mit.</p>
   </section>
 
   <section class="ot-card" id="gaeste">
     <h2 class="ot-card__title">Wer kommt <span class="ot-card__note">23 Zusagen · 4 vielleicht</span></h2>
     <ul class="ot-list guests">
-      <li><span class="guest">Anna K.</span> <span class="ot-tag ot-tag--ok">ab Beginn</span> <span class="ot-meta">+1 Jonas</span></li>
+      <li class="is-own"><span class="guest">Anna K.</span> <span class="ot-tag ot-tag--ok">ab Beginn</span>
+        <span class="ot-meta">2 Personen · dein Eintrag</span>
+        <span class="rowacts">
+          <span class="iconbtn" role="button" aria-disabled="true" aria-label="Bearbeiten" title="Bearbeiten"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16z"/><path d="M14 5l4 4"/></svg></span>
+          <span class="iconbtn" role="button" aria-disabled="true" aria-label="Löschen" title="Löschen"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 7h14"/><path d="M9 7V5h6v2"/><path d="M7 7l1 13h8l1-13"/></svg></span>
+        </span></li>
       <li><span class="guest">Bernd</span> <span class="ot-tag ot-tag--ok">ab Beginn</span></li>
       <li><span class="guest">Clara M.</span> <span class="ot-tag">ab ca. 19:30</span> <span class="ot-meta">eingeladen von Anna K.</span></li>
       <li><span class="guest">Dirk S.</span> <span class="ot-tag ot-tag--warn">vielleicht</span></li>
-      <li><span class="guest guest--anon">2 Gäste ohne Namen</span> <span class="ot-tag ot-tag--ok">ab Beginn</span></li>
+      <li><span class="guest">Eva &amp; Tom</span> <span class="ot-tag ot-tag--ok">ab Beginn</span></li>
       <li class="ot-empty">… 17 weitere</li>
     </ul>
   </section>
@@ -123,7 +126,11 @@
   <section class="ot-card" id="mitbringen">
     <h2 class="ot-card__title">Wer bringt was mit</h2>
     <ul class="ot-list">
-      <li><span class="guest">Anna K.</span> <span class="ot-meta">Nudelsalat (Essen)</span></li>
+      <li class="is-own"><span class="guest">Anna K.</span> <span class="ot-meta">Nudelsalat (Essen)</span>
+        <span class="rowacts">
+          <span class="iconbtn" role="button" aria-disabled="true" aria-label="Bearbeiten" title="Bearbeiten"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16z"/><path d="M14 5l4 4"/></svg></span>
+          <span class="iconbtn" role="button" aria-disabled="true" aria-label="Löschen" title="Löschen"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 7h14"/><path d="M9 7V5h6v2"/><path d="M7 7l1 13h8l1-13"/></svg></span>
+        </span></li>
       <li><span class="guest">Bernd</span> <span class="ot-meta">2 Kisten Wasser (Getränke)</span></li>
       <li><span class="guest">Clara M.</span> <span class="ot-meta">Lichterketten (Sonstiges)</span></li>
     </ul>
@@ -136,6 +143,8 @@
       <li><span class="guest">Kuchen für 40</span> <span class="ot-tag ot-tag--warn">offen</span>
         <span class="wish-act"><span class="ot-btn" aria-disabled="true">Übernehmen</span></span></li>
       <li><span class="guest">Musikanlage</span> <span class="ot-tag ot-tag--ok">übernommen von Bernd</span></li>
+      <li class="is-own"><span class="guest">Servietten</span> <span class="ot-tag ot-tag--ok">von dir übernommen</span>
+        <span class="wish-act"><span class="ot-btn" aria-disabled="true">Freigeben</span></span></li>
       <li><span class="guest">Kühlbox</span> <span class="ot-tag ot-tag--warn">offen</span>
         <span class="wish-act"><span class="ot-btn" aria-disabled="true">Übernehmen</span></span></li>
     </ul>
@@ -160,7 +169,7 @@
 </main>
 
 <footer class="foot">
-  <span>Private Seite · wird nach der Feier gelöscht</span>
+  <span>Private Seite · keine Cookies · wird nach der Feier gelöscht</span>
   <span class="ot-empty">Datenschutzhinweis (Platzhalter)</span>
 </footer>
 

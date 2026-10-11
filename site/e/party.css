@@ -82,3 +82,39 @@ main { display: grid; gap: var(--ot-space-4); max-width: 44rem; margin: 0 auto; 
   color: var(--ot-fg-faint);
   font-size: var(--ot-text-sm);
 }
+
+/* --- eigene Eintraege: bearbeiten und loeschen --- */
+.is-own { position: relative; }
+.rowacts { display: flex; gap: var(--ot-space-1); margin-left: auto; }
+
+.iconbtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--ot-touch);
+  height: var(--ot-touch);
+  border: 1px solid var(--ot-line-strong);
+  border-radius: var(--ot-radius-sm);
+  background: var(--ot-surface-2);
+  color: var(--ot-fg-dim);
+  cursor: pointer;
+}
+.iconbtn:hover, .iconbtn:focus-visible { color: var(--ot-fg); border-color: var(--ot-fg-faint); }
+.iconbtn svg { width: 1.15rem; height: 1.15rem; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.iconbtn[aria-disabled="true"] { opacity: .55; cursor: not-allowed; }
+
+/* Eintraege, die dir gehoeren, sind erkennbar - geaendert werden koennen ohnehin nur diese. */
+.is-own > .guest::after {
+  content: "du";
+  margin-left: var(--ot-space-2);
+  padding: .05rem .4rem;
+  border: 1px solid var(--ot-accent);
+  border-radius: var(--ot-radius-pill);
+  color: var(--ot-accent);
+  font-size: var(--ot-text-xs);
+  font-weight: var(--ot-weight-regular);
+  letter-spacing: .04em;
+}
+
+.link { margin: var(--ot-space-3) 0 0; word-break: break-all; }
+.link code { color: var(--ot-fg); font-family: var(--ot-font-num); font-size: var(--ot-text-sm); }

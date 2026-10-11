@@ -34,6 +34,9 @@ done < <(grep -ohE 'href="[^"]+\.css"' site/e/index.html site/invalid/index.html
 
 # Keine echten Daten im Prototyp
 grep -qiE 'projekt.nordstern|TT\.MM\.JJJJ' site/e/index.html && pass "Platzhalter statt echter Daten" || fail "Platzhalter fehlen"
+# Zugang ohne Cookie: die Seite darf keines setzen oder lesen wollen.
+grep -qi 'document.cookie\|localStorage\|sessionStorage' site/e/index.html \
+  && fail "Seite greift auf Browser-Speicher zu" || pass "kein Cookie-/Speicherzugriff im Markup"
 # Das Geheimnis darf nicht im Repo liegen: die Vorlage traegt nur den Platzhalter,
 # und nirgends steht eine Zeichenkette, die wie ein Token aussieht (>=22 Zeichen Base64url).
 grep -q '@TOKEN@' deploy/nginx/otelsa-party.conf.template \

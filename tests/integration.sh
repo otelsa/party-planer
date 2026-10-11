@@ -50,7 +50,13 @@ echo "== Inhalte"
 page=$(body "$BASE/e/$TOKEN")
 grep -q 'Projekt' <<<"$page"        && pass "Seite zeigt den Codenamen" || fail "Codename fehlt"
 grep -q 'Gesamt\|gesamt' <<<"$page" && pass "Gesamtzahl vorhanden" || fail "Gesamtzahl fehlt"
-grep -q 'ohne Namen' <<<"$page"     && pass "Gaeste ohne Namen werden mitgezaehlt" || fail "Option ohne Namen fehlt"
+grep -q 'Anzeigen als' <<<"$page"   && pass "Feld 'Anzeigen als'" || fail "Feld 'Anzeigen als' fehlt"
+grep -q 'Anzahl' <<<"$page"         && pass "Feld 'Anzahl'" || fail "Feld 'Anzahl' fehlt"
+grep -qi 'cookie' <<<"$page"        && pass "Seite erklaert den Zugang ohne Cookie" || fail "Hinweis zum Zugang fehlt"
+grep -q 'aria-label="Bearbeiten"' <<<"$page" && grep -q 'aria-label="Löschen"' <<<"$page" \
+  && pass "eigene Eintraege haben Bearbeiten und Loeschen" || fail "Aktionen an eigenen Eintraegen fehlen"
+own=$(grep -c 'class="is-own"' <<<"$page")
+[ "$own" -ge 2 ] && pass "eigene Eintraege markiert ($own)" || fail "zu wenige eigene Eintraege markiert: $own"
 grep -qi '<title>Einladung</title>' <<<"$page" && pass "neutraler Titel" || fail "Titel verraet etwas"
 grep -qi 'og:image' <<<"$page"      && fail "og:image wuerde ein Vorschaubild zeigen" || pass "kein Vorschaubild"
 grep -qiE '<script|<style|[[:space:]]style=' <<<"$page" && fail "Inline-Skript/-Style verstoesst gegen die CSP" || pass "kein Inline-Skript/-Style"
@@ -64,6 +70,10 @@ for css in party otelsa-tokens otelsa-components invalid; do
   expect "/e/$css.css ist CSS"      "text/css" "$(ctype "$BASE/e/$css.css")"
 done
 grep -q 'href="party.css"' <<<"$page" && pass "Seite laedt ihr Stylesheet ohne Token im Pfad" || fail "Stylesheet-Referenz unerwartet"
+
+echo "== Kein Cookie"
+set_cookie=$(headers "$BASE/e/$TOKEN" | grep -ci '^set-cookie' || true)
+[ "$set_cookie" = "0" ] && pass "Server setzt kein Cookie" || fail "Server setzt $set_cookie Cookie(s)"
 
 echo "== Kopfzeilen"
 h=$(headers "$BASE/e/$TOKEN")
