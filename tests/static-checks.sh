@@ -38,7 +38,8 @@ grep -qiE 'projekt.nordstern|TT\.MM\.JJJJ' site/e/index.html && pass "Platzhalte
 # und nirgends steht eine Zeichenkette, die wie ein Token aussieht (>=22 Zeichen Base64url).
 grep -q '@TOKEN@' deploy/nginx/otelsa-party.conf.template \
   && pass "Vorlage nutzt den Platzhalter @TOKEN@" || fail "Platzhalter @TOKEN@ fehlt in der Vorlage"
-leak=$(grep -rhoE '/e/[A-Za-z0-9_-]{22,}' deploy site tests 2>/dev/null | grep -v '@TOKEN@' || true)
+# Nur ausgelieferte Dateien und Konfiguration; tests/ enthaelt absichtlich Dummy-Token.
+leak=$(grep -rhoE '/e/[A-Za-z0-9_-]{22,}' deploy site 2>/dev/null | grep -v '@TOKEN@' || true)
 [ -z "$leak" ] && pass "kein Token im Repo" || fail "sieht nach einem Token aus: $leak"
 
 [ "$fails" -eq 0 ] && echo "alle Checks bestanden" || { echo "$fails Check(s) fehlgeschlagen"; exit 1; }
