@@ -1,5 +1,5 @@
-{# Der Teil, der sich aendert: Zahlen, Gaesteliste, Mitbringliste.
-   Wird sowohl in die Seite eingebettet als auch von /party/listen einzeln geliefert. #}
+{# Der Teil, der sich ändert: Zahlen, Gästeliste, Mitbringliste.
+   Wird in die Seite eingebettet und von /party/listen einzeln geliefert. #}
   <section class="ot-card" id="zahlen">
     <h2 class="ot-card__title">Wie viele kommen</h2>
     <div class="counts">
@@ -12,47 +12,53 @@
   </section>
 
   <section class="ot-card" id="gaeste">
-    <h2 class="ot-card__title">Wer kommt <span class="ot-card__note">{{ gaeste|length }} Einträge</span></h2>
-    <ul class="ot-list guests">
-      {% for gast in gaeste %}
-      <li{{ ' class="is-own"'|safe if gast.session_id == sid }}>
-        <span class="guest">{{ gast.anzeigename }}</span>
-        {% if gast.status == 'ja' %}<span class="ot-tag ot-tag--ok">{{ "ab Beginn" if gast.ankunft == "beginn" else "ab ca. " ~ (gast.ankunft_zeit or "später") }}</span>
-        {% elif gast.status == 'vielleicht' %}<span class="ot-tag ot-tag--warn">vielleicht</span>
-        {% else %}<span class="ot-tag">abgesagt</span>{% endif %}
-        <span class="ot-meta">{{ gast.anzahl }} {{ "Person" if gast.anzahl == 1 else "Personen" }}</span>
-        {% if gast.session_id == sid %}
-        <span class="rowacts">
-          <a class="iconbtn" href="#anmeldung" aria-label="Bearbeiten" title="Bearbeiten"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16z"/><path d="M14 5l4 4"/></svg></a>
+    <h2 class="ot-card__title">Wer kommt</h2>
+    {% for gruppe in gruppen %}
+    <div class="gruppe">
+      <h3 class="gruppe__titel">{{ gruppe.titel }}
+        <span class="gruppe__zahl">{{ gruppe.anzahl }}
+          {%- if gruppe.personen != gruppe.anzahl %} · {{ gruppe.personen }} Personen{% endif %}</span>
+      </h3>
+      <p class="namen">
+        {%- for gast in gruppe.leute -%}
+        <span class="name{{ ' is-own' if gast.session_id == sid }}">{{ gast.anzeigename }}
+          {%- if gast.anzahl > 1 %} <em class="plus">+{{ gast.anzahl - 1 }}</em>{% endif %}
+          {%- if gast.ankunft == 'spaeter' and gast.ankunft_zeit %} <em class="zeit">{{ gast.ankunft_zeit }}</em>{% endif %}
+          {%- if gast.session_id == sid %}
+          <a class="iconbtn iconbtn--klein" href="#anmeldung" aria-label="Eigenen Eintrag bearbeiten" title="Bearbeiten"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16z"/><path d="M14 5l4 4"/></svg></a>
+          {%- endif -%}
         </span>
-        {% endif %}
-      </li>
-      {% else %}
-      <li class="ot-empty">Noch niemand angemeldet.</li>
-      {% endfor %}
-    </ul>
+        {%- endfor -%}
+      </p>
+    </div>
+    {% else %}
+    <p class="ot-empty">Noch niemand angemeldet.</p>
+    {% endfor %}
   </section>
 
   <section class="ot-card" id="mitbringen">
     <h2 class="ot-card__title">Wer bringt was mit</h2>
-    <ul class="ot-list">
-      {% for eintrag in mitbringsel %}
-      <li{{ ' class="is-own"'|safe if eintrag.session_id == sid }}>
-        <span class="guest">{{ eintrag.anzeigename }}</span>
-        <span class="ot-meta">{{ eintrag.text }} ({{ eintrag.kategorie }})</span>
-        {% if eintrag.session_id == sid %}
-        <span class="rowacts">
+    {% for gruppe in mitgruppen %}
+    <div class="gruppe">
+      <h3 class="gruppe__titel">{{ gruppe.titel }} <span class="gruppe__zahl">{{ gruppe.sachen|length }}</span></h3>
+      <ul class="mitliste">
+        {% for eintrag in gruppe.sachen %}
+        <li{{ ' class="is-own"'|safe if eintrag.session_id == sid }}>
+          <span class="sache">{{ eintrag.text }}</span>
+          <span class="von">{{ eintrag.anzeigename }}</span>
+          {% if eintrag.session_id == sid %}
           <form method="post" action="/party/mitbringsel/{{ eintrag.id }}/loeschen">
             <input type="hidden" name="csrf" value="{{ csrf }}">
-            <button class="iconbtn" type="submit" aria-label="Löschen" title="Löschen"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 7h14"/><path d="M9 7V5h6v2"/><path d="M7 7l1 13h8l1-13"/></svg></button>
+            <button class="iconbtn iconbtn--klein" type="submit" aria-label="Löschen" title="Löschen"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 7h14"/><path d="M9 7V5h6v2"/><path d="M7 7l1 13h8l1-13"/></svg></button>
           </form>
-        </span>
-        {% endif %}
-      </li>
-      {% else %}
-      <li class="ot-empty">Noch nichts eingetragen.</li>
-      {% endfor %}
-    </ul>
+          {% endif %}
+        </li>
+        {% endfor %}
+      </ul>
+    </div>
+    {% else %}
+    <p class="ot-empty">Noch nichts eingetragen.</p>
+    {% endfor %}
 
     {% if me %}
     <form class="form form--row" method="post" action="/party/mitbringsel">

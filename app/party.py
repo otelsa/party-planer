@@ -164,9 +164,9 @@ def entry(token):
 @app.get("/party")
 @require_session
 def party():
-    gaeste, mit, zahlen = listen_daten()
+    gaeste, mit, zahlen, gruppen, mitgruppen = listen_daten()
     return render_template(
-        "party.html", me=me(), gaeste=gaeste, mitbringsel=mit, zahlen=zahlen,
+        "party.html", gruppen=gruppen, mitgruppen=mitgruppen, me=me(), gaeste=gaeste, mitbringsel=mit, zahlen=zahlen,
         csrf=csrf_token(), sid=g.session["id"], stand=stand_wert(),
     )
 
@@ -278,7 +278,35 @@ def listen_daten():
         "vielleicht": sum(1 for r in gaeste if r["status"] == "vielleicht"),
         "absagen": sum(1 for r in gaeste if r["status"] == "nein"),
     }
-    return gaeste, mit, zahlen
+
+    # Gaeste in vier Gruppen, in genau dieser Reihenfolge.
+    def gruppe_von(r):
+        if r["status"] == "nein":
+            return "nicht"
+        if r["status"] == "vielleicht":
+            return "vielleicht"
+        return "spaeter" if r["ankunft"] == "spaeter" else "kommt"
+
+    titel = {"kommt": "Kommt", "spaeter": "Später", "vielleicht": "Vielleicht", "nicht": "Kommt nicht"}
+    gruppen = []
+    for schluessel in ("kommt", "spaeter", "vielleicht", "nicht"):
+        leute = [r for r in gaeste if gruppe_von(r) == schluessel]
+        if leute:
+            gruppen.append({
+                "titel": titel[schluessel],
+                "leute": leute,
+                "anzahl": len(leute),
+                "personen": sum(r["anzahl"] for r in leute),
+            })
+
+    # Mitbringsel nach Kategorie, feste Reihenfolge.
+    mitgruppen = []
+    for kategorie in ("Essen", "Getränke", "Sonstiges"):
+        sachen = [r for r in mit if r["kategorie"] == kategorie]
+        if sachen:
+            mitgruppen.append({"titel": kategorie, "sachen": sachen})
+
+    return gaeste, mit, zahlen, gruppen, mitgruppen
 
 
 @app.get("/party/stand")
@@ -294,8 +322,9 @@ def stand():
 @require_session
 def listen():
     """Nur der veraenderliche Teil der Seite, zum Austauschen im Browser."""
-    gaeste, mit, zahlen = listen_daten()
+    gaeste, mit, zahlen, gruppen, mitgruppen = listen_daten()
     return render_template("_live.html", gaeste=gaeste, mitbringsel=mit, zahlen=zahlen,
+                           gruppen=gruppen, mitgruppen=mitgruppen,
                            me=me(), csrf=csrf_token(), sid=g.session["id"])
 
 

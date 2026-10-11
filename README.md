@@ -7,6 +7,8 @@ Architektur & Security-Review“.
 **Stand: lauffähige Anmeldung.** Flask + SQLite hinter nginx, als systemd-Dienst.
 Anmelden, ändern, löschen und Mitbringliste funktionieren; Inhalte des Plans sind Platzhalter.
 Die offene Seite aktualisiert sich selbst, wenn jemand anderes etwas ändert.
+Gäste stehen platzsparend als fortlaufende Liste in vier Gruppen (Kommt, Später,
+Vielleicht, Kommt nicht), Mitbringsel nach Kategorie.
 Noch nicht gebaut: Wunschliste, Einzel-Einladungen, Admin-Bereich, automatische Löschung.
 
 ## Aufbau

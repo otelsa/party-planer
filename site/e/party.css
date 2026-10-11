@@ -158,3 +158,44 @@ button.ot-btn { font: inherit; }
   font-size: var(--ot-text-sm);
   box-shadow: 0 2px 12px rgba(0, 0, 0, .35);
 }
+
+/* --- Gruppen: Gäste als fortlaufende Liste, Mitbringsel nach Kategorie --- */
+.gruppe + .gruppe { margin-top: var(--ot-space-4); }
+
+.gruppe__titel {
+  display: flex;
+  align-items: baseline;
+  gap: var(--ot-space-2);
+  margin: 0 0 var(--ot-space-2);
+  font-size: var(--ot-text-sm);
+  font-weight: var(--ot-weight-medium);
+  letter-spacing: var(--ot-tracking-caps);
+  text-transform: uppercase;
+  color: var(--ot-heading);
+}
+.gruppe__zahl { color: var(--ot-fg-faint); letter-spacing: 0; text-transform: none; font-weight: var(--ot-weight-regular); }
+
+/* Namen laufen in einer Zeile weiter, durch Punkte getrennt - spart Platz bei 40 Gästen. */
+.namen { margin: 0; line-height: 1.9; }
+.name { white-space: nowrap; }
+.name:not(:last-child)::after { content: " · "; color: var(--ot-fg-faint); }
+.name .plus, .name .zeit { font-style: normal; font-size: var(--ot-text-xs); color: var(--ot-fg-faint); }
+.name.is-own { color: var(--ot-accent); }
+.name.is-own .plus, .name.is-own .zeit { color: var(--ot-accent); opacity: .8; }
+
+/* Mitbringsel: die Sache zuerst und kräftig, der Name klein daneben. */
+.mitliste { list-style: none; margin: 0; padding: 0; }
+.mitliste li {
+  display: flex;
+  align-items: baseline;
+  gap: var(--ot-space-2);
+  padding: 0.3rem 0;
+  border-bottom: 1px solid var(--ot-line);
+}
+.mitliste li:last-child { border-bottom: 0; }
+.mitliste .sache { font-weight: var(--ot-weight-medium); }
+.mitliste .von { color: var(--ot-fg-faint); font-size: var(--ot-text-xs); }
+.mitliste form { margin-left: auto; display: flex; }
+
+.iconbtn--klein { width: 1.9rem; height: 1.9rem; border: 0; background: transparent; vertical-align: -0.35rem; }
+.iconbtn--klein svg { width: 0.95rem; height: 0.95rem; }

@@ -67,6 +67,7 @@ grep -qi 'Cookie' <<<"$page"        && pass "Seite erklaert das Cookie" || fail 
 grep -q 'Link aus der WhatsApp-Gruppe' <<<"$page" && pass "Hinweis zum Gruppenlink" || fail "Hinweis fehlt"
 grep -q 'name="csrf"' <<<"$page"    && pass "Formulare tragen ein CSRF-Token" || fail "CSRF-Token fehlt"
 grep -q 'id="live" data-stand=' <<<"$page" && pass "veraenderlicher Teil ist abgegrenzt" || fail "Bereich 'live' fehlt"
+grep -q 'class="namen"' <<<"$page" && pass "Gaeste stehen als fortlaufende Liste" || fail "fortlaufende Namensliste fehlt"
 grep -q 'src="/e/party.js"' <<<"$page" && pass "Seite laedt das Aktualisierungs-Skript" || fail "Skript fehlt"
 grep -qi '<title>Einladung</title>' <<<"$page" && pass "neutraler Titel" || fail "Titel verraet etwas"
 grep -qi 'og:image' <<<"$page"      && fail "og:image wuerde ein Vorschaubild zeigen" || pass "kein Vorschaubild"
@@ -156,9 +157,21 @@ if [ "${FLOW:-0}" = "1" ]; then
   grep -q 'Angemeldet als <strong>Test A' <<<"$seite_a" && pass "A wird wiedererkannt" || fail "A wird nicht wiedererkannt"
   grep -q 'Angemeldet als <strong>Test B' <<<"$seite_b" && pass "B wird als eigener Gast gefuehrt" || fail "B nicht erkannt"
   grep -q 'Test B' <<<"$seite_a" && pass "A sieht den Eintrag von B" || fail "A sieht B nicht"
-  [ "$(grep -c 'class="is-own"' <<<"$seite_a")" -ge 2 ] && pass "A sieht eigene Eintraege markiert" || fail "A: eigene Eintraege nicht markiert"
-  [ "$(grep -c 'class="is-own"' <<<"$seite_b")" = "1" ] && pass "B sieht nur den eigenen Eintrag markiert" || fail "B: falsche Markierung"
+  # "is-own" steht am Namen in der Gruppenliste und an eigenen Mitbringseln.
+  [ "$(grep -c 'is-own' <<<"$seite_a")" -ge 2 ] && pass "A sieht eigene Eintraege markiert" || fail "A: eigene Eintraege nicht markiert"
+  [ "$(grep -c 'is-own' <<<"$seite_b")" = "1" ] && pass "B sieht nur den eigenen Eintrag markiert" || fail "B: falsche Markierung"
   grep -q 'Testsalat' <<<"$seite_b" && pass "B sieht das Mitbringsel von A" || fail "Mitbringsel fehlt bei B"
+
+  # Gruppierung: A kommt ab Beginn, B hat "vielleicht" gewaehlt.
+  grep -q 'gruppe__titel">Kommt' <<<"$seite_a" && pass "Gruppe 'Kommt' vorhanden" || fail "Gruppe 'Kommt' fehlt"
+  grep -q 'gruppe__titel">Vielleicht' <<<"$seite_a" && pass "Gruppe 'Vielleicht' vorhanden" || fail "Gruppe 'Vielleicht' fehlt"
+  awk '/gruppe__titel">Vielleicht/,/<\/div>/' <<<"$seite_a" | grep -q 'Test B' \
+    && pass "B steht in der Gruppe Vielleicht" || fail "B steht in der falschen Gruppe"
+  awk '/gruppe__titel">Kommt/,/<\/div>/' <<<"$seite_a" | grep -q 'Test A' \
+    && pass "A steht in der Gruppe Kommt" || fail "A steht in der falschen Gruppe"
+  grep -q 'class="sache">Testsalat' <<<"$seite_a" && pass "Mitgebrachtes steht vorn" || fail "Mitbringsel nicht hervorgehoben"
+  grep -q '<span class="von">Test A' <<<"$seite_a" && pass "Name steht klein daneben" || fail "Name fehlt am Mitbringsel"
+  grep -q 'gruppe__titel">Essen' <<<"$seite_a" && pass "Mitbringsel nach Kategorie gruppiert" || fail "Kategorie-Gruppe fehlt"
 
   # B darf fremde Eintraege nicht loeschen
   mid=$(grep -oE '/party/mitbringsel/[0-9]+/loeschen' <<<"$seite_a" | head -1 | grep -oE '[0-9]+')
