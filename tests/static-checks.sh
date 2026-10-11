@@ -8,9 +8,13 @@ fail() { printf 'FAIL  %s\n' "$1"; fails=$((fails + 1)); }
 
 for f in app/templates/party.html site/invalid/index.html; do
   # Die CSP ist default-src 'none'; style-src 'self': alles Inline waere blockiert.
-  grep -qiE '<script|<style|[[:space:]]style=|[[:space:]]on[a-z]+=' "$f" \
-    && fail "$f: Inline-Skript/-Style wuerde von der CSP blockiert" \
-    || pass "$f: kein Inline-Skript/-Style"
+  # Inline ist verboten; ein <script src="..."> aus eigener Quelle ist erlaubt.
+  grep -qiE '<style|[[:space:]]style=|[[:space:]]on[a-z]+=' "$f" \
+    && fail "$f: Inline-Style oder Event-Attribut wuerde von der CSP blockiert" \
+    || pass "$f: kein Inline-Style"
+  grep -qE '<script[^>]*>[^<]' "$f" \
+    && fail "$f: Inline-Skript wuerde von der CSP blockiert" \
+    || pass "$f: kein Inline-Skript"
   grep -qi 'name="robots" content="noindex' "$f" && pass "$f: noindex gesetzt" || fail "$f: noindex fehlt"
   ext=$(grep -oiE '(src|href)="(https?:)?//[^"]+"' "$f" || true)
   [ -z "$ext" ] && pass "$f: keine fremden Quellen" || fail "$f: fremde Quelle(n): $ext"

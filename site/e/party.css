@@ -141,3 +141,20 @@ main { display: grid; gap: var(--ot-space-4); max-width: 44rem; margin: 0 auto; 
 select.field { appearance: none; padding-right: var(--ot-space-4); }
 button.ot-btn { font: inherit; }
 .rowacts form { display: flex; }
+
+/* --- Hinweis "Liste aktualisiert" --- */
+.frisch {
+  position: fixed;
+  left: 50%;
+  bottom: var(--ot-space-4);
+  transform: translateX(-50%);
+  z-index: 2;
+  margin: 0;
+  padding: var(--ot-space-2) var(--ot-space-4);
+  border: 1px solid var(--ot-line-strong);
+  border-radius: var(--ot-radius-pill);
+  background: var(--ot-surface-2);
+  color: var(--ot-fg-dim);
+  font-size: var(--ot-text-sm);
+  box-shadow: 0 2px 12px rgba(0, 0, 0, .35);
+}

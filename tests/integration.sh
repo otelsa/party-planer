@@ -66,13 +66,21 @@ grep -q 'Personen gesamt' <<<"$page" && pass "Gesamtzahl vorhanden" || fail "Ges
 grep -qi 'Cookie' <<<"$page"        && pass "Seite erklaert das Cookie" || fail "Cookie-Hinweis fehlt"
 grep -q 'Link aus der WhatsApp-Gruppe' <<<"$page" && pass "Hinweis zum Gruppenlink" || fail "Hinweis fehlt"
 grep -q 'name="csrf"' <<<"$page"    && pass "Formulare tragen ein CSRF-Token" || fail "CSRF-Token fehlt"
+grep -q 'id="live" data-stand=' <<<"$page" && pass "veraenderlicher Teil ist abgegrenzt" || fail "Bereich 'live' fehlt"
+grep -q 'src="/e/party.js"' <<<"$page" && pass "Seite laedt das Aktualisierungs-Skript" || fail "Skript fehlt"
 grep -qi '<title>Einladung</title>' <<<"$page" && pass "neutraler Titel" || fail "Titel verraet etwas"
 grep -qi 'og:image' <<<"$page"      && fail "og:image wuerde ein Vorschaubild zeigen" || pass "kein Vorschaubild"
-grep -qiE '<script|<style|[[:space:]]style=' <<<"$page" && fail "Inline-Skript/-Style verstoesst gegen die CSP" || pass "kein Inline-Skript/-Style"
+# Erlaubt ist nur <script src="..."> aus eigener Quelle; Inline waere von der CSP blockiert.
+grep -qiE '<style|[[:space:]]style=|[[:space:]]on[a-z]+=' <<<"$page" && fail "Inline-Style verstoesst gegen die CSP" || pass "kein Inline-Style"
+grep -qE '<script[^>]*>[^<]' <<<"$page" && fail "Inline-Skript verstoesst gegen die CSP" || pass "kein Inline-Skript"
 grep -qiE 'PIN|persönlichen Link|/me/' <<<"$page" && fail "PIN oder persoenlicher Link vorhanden" || pass "weder PIN noch persoenlicher Link"
 hint=$(body "$BASE/e/irgendwas")
 grep -q 'nicht gültig' <<<"$hint"   && pass "Hinweisseite erklaert den ungueltigen Link" || fail "Hinweistext fehlt"
 grep -qi 'Projekt\|Feier\|Party'  <<<"$hint" && fail "Hinweisseite verraet den Anlass" || pass "Hinweisseite verraet nichts"
+
+echo "== Dateien"
+expect "/e/party.js"                200 "$(status "$BASE/e/party.js")"
+case "$(ctype "$BASE/e/party.js")" in *javascript*) pass "/e/party.js ist JavaScript" ;; *) fail "/e/party.js hat falschen Typ" ;; esac
 
 echo "== Stylesheets"
 for css in party otelsa-tokens otelsa-components invalid; do
@@ -83,7 +91,7 @@ done
 echo "== Kopfzeilen"
 h=$(headers -b "$sess/jar" "$BASE/party")
 for want in \
-  "content-security-policy: default-src 'none'; style-src 'self'" \
+  "content-security-policy: default-src 'none'; style-src 'self'; script-src 'self'; connect-src 'self'" \
   "x-robots-tag: noindex" \
   "referrer-policy: no-referrer" \
   "x-content-type-options: nosniff" \
@@ -167,6 +175,17 @@ if [ "${FLOW:-0}" = "1" ]; then
 
   expect "ohne Cookie kein Zugriff" 303 "$("${CURL[@]}" -o /dev/null -w '%{http_code}' "$BASE/party")"
   expect "falsches CSRF-Token" 400 "$(post "$jar/a" -d "csrf=falsch&anzeigename=X&anzahl=1" "$BASE/party/eintrag")"
+
+  echo "== Live-Aktualisierung"
+  stand1=$("${CURL[@]}" -b "$jar/a" "$BASE/party/stand")
+  grep -q '"stand"' <<<"$stand1" && pass "/party/stand liefert JSON" || fail "/party/stand antwortet nicht wie erwartet"
+  post "$jar/b" -d "csrf=$cb&text=Testkuchen&kategorie=Essen" "$BASE/party/mitbringsel" >/dev/null
+  stand2=$("${CURL[@]}" -b "$jar/a" "$BASE/party/stand")
+  [ "$stand1" != "$stand2" ] && pass "Stand aendert sich nach fremder Aenderung" || fail "Stand bleibt gleich"
+  teil=$("${CURL[@]}" -b "$jar/a" "$BASE/party/listen")
+  grep -q 'Testkuchen' <<<"$teil" && pass "/party/listen zeigt die Aenderung" || fail "/party/listen ohne Aenderung"
+  grep -qi '<html' <<<"$teil" && fail "/party/listen liefert eine ganze Seite statt eines Ausschnitts" || pass "/party/listen ist nur der Ausschnitt"
+  expect "/party/stand ohne Sitzung" 303 "$("${CURL[@]}" -o /dev/null -w '%{http_code}' "$BASE/party/stand")"
 
   # Aufraeumen
   post "$jar/a" -d "csrf=$ca" "$BASE/party/eintrag/loeschen" >/dev/null

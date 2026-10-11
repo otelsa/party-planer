@@ -15,8 +15,11 @@
 <link rel="stylesheet" href="/e/otelsa-tokens.css">
 <link rel="stylesheet" href="/e/otelsa-components.css">
 <link rel="stylesheet" href="/e/party.css">
+<script src="/e/party.js" defer></script>
 </head>
 <body class="ot-app">
+
+<p id="frisch" class="frisch" role="status" hidden>Liste aktualisiert</p>
 
 <header class="head">
   <p class="eyebrow">Streng geheim</p>
@@ -100,77 +103,9 @@
       Eintrag an. Ist das passiert: sag einem Organisator Bescheid, er räumt es auf.</p>
   </section>
 
-  <section class="ot-card" id="zahlen">
-    <h2 class="ot-card__title">Wie viele kommen</h2>
-    <div class="counts">
-      <div class="count"><span class="ot-value">{{ zahlen.personen }}</span><span class="count__lbl">Personen gesamt</span></div>
-      <div class="count"><span class="ot-value">{{ zahlen.anmeldungen }}</span><span class="count__lbl">Anmeldungen</span></div>
-      <div class="count"><span class="ot-value">{{ zahlen.vielleicht }}</span><span class="count__lbl">Vielleicht</span></div>
-      <div class="count"><span class="ot-value">{{ zahlen.absagen }}</span><span class="count__lbl">Absagen</span></div>
-    </div>
-    <p class="note">Die Gesamtzahl summiert die Anzahl aller Zusagen.</p>
-  </section>
-
-  <section class="ot-card" id="gaeste">
-    <h2 class="ot-card__title">Wer kommt <span class="ot-card__note">{{ gaeste|length }} Einträge</span></h2>
-    <ul class="ot-list guests">
-      {% for gast in gaeste %}
-      <li{{ ' class="is-own"'|safe if gast.session_id == sid }}>
-        <span class="guest">{{ gast.anzeigename }}</span>
-        {% if gast.status == 'ja' %}<span class="ot-tag ot-tag--ok">{{ "ab Beginn" if gast.ankunft == "beginn" else "ab ca. " ~ (gast.ankunft_zeit or "später") }}</span>
-        {% elif gast.status == 'vielleicht' %}<span class="ot-tag ot-tag--warn">vielleicht</span>
-        {% else %}<span class="ot-tag">abgesagt</span>{% endif %}
-        <span class="ot-meta">{{ gast.anzahl }} {{ "Person" if gast.anzahl == 1 else "Personen" }}</span>
-        {% if gast.session_id == sid %}
-        <span class="rowacts">
-          <a class="iconbtn" href="#anmeldung" aria-label="Bearbeiten" title="Bearbeiten"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16z"/><path d="M14 5l4 4"/></svg></a>
-        </span>
-        {% endif %}
-      </li>
-      {% else %}
-      <li class="ot-empty">Noch niemand angemeldet.</li>
-      {% endfor %}
-    </ul>
-  </section>
-
-  <section class="ot-card" id="mitbringen">
-    <h2 class="ot-card__title">Wer bringt was mit</h2>
-    <ul class="ot-list">
-      {% for eintrag in mitbringsel %}
-      <li{{ ' class="is-own"'|safe if eintrag.session_id == sid }}>
-        <span class="guest">{{ eintrag.anzeigename }}</span>
-        <span class="ot-meta">{{ eintrag.text }} ({{ eintrag.kategorie }})</span>
-        {% if eintrag.session_id == sid %}
-        <span class="rowacts">
-          <form method="post" action="/party/mitbringsel/{{ eintrag.id }}/loeschen">
-            <input type="hidden" name="csrf" value="{{ csrf }}">
-            <button class="iconbtn" type="submit" aria-label="Löschen" title="Löschen"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 7h14"/><path d="M9 7V5h6v2"/><path d="M7 7l1 13h8l1-13"/></svg></button>
-          </form>
-        </span>
-        {% endif %}
-      </li>
-      {% else %}
-      <li class="ot-empty">Noch nichts eingetragen.</li>
-      {% endfor %}
-    </ul>
-
-    {% if me %}
-    <form class="form form--row" method="post" action="/party/mitbringsel">
-      <input type="hidden" name="csrf" value="{{ csrf }}">
-      <label class="labelled labelled--grow">Ich bringe mit
-        <input class="field" type="text" name="text" maxlength="80" required placeholder="z. B. Nudelsalat">
-      </label>
-      <label class="labelled">Kategorie
-        <select class="field" name="kategorie">
-          <option>Essen</option><option>Getränke</option><option>Sonstiges</option>
-        </select>
-      </label>
-      <button class="ot-btn" type="submit">Hinzufügen</button>
-    </form>
-    {% else %}
-    <p class="note">Melde dich oben an, dann kannst du etwas eintragen.</p>
-    {% endif %}
-  </section>
+  <div id="live" data-stand="{{ stand }}">
+{% include "_live.html" %}
+  </div>
 
   <section class="ot-card ot-card--warn" id="geheim">
     <h2 class="ot-card__title">Bitte beachten</h2>

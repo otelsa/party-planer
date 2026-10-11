@@ -18,7 +18,7 @@ esac
 [ "${#TOKEN}" -ge 22 ] || { echo "Token zu kurz (mindestens 22 Zeichen)" >&2; exit 1; }
 
 install -d -o root -g root -m 0755 "$WEB" "$WEB/e" "$WEB/invalid"
-for f in party.css otelsa-tokens.css otelsa-components.css; do
+for f in party.css party.js otelsa-tokens.css otelsa-components.css; do
   install -o root -g root -m 0644 "$REPO/site/e/$f" "$WEB/e/$f"
 done
 
@@ -26,7 +26,9 @@ done
 id -u otelsa-party >/dev/null 2>&1 || useradd --system --no-create-home --shell /usr/sbin/nologin otelsa-party
 install -d -o root -g root -m 0755 /opt/otelsa-party /opt/otelsa-party/templates
 install -o root -g root -m 0644 "$REPO/app/party.py" /opt/otelsa-party/party.py
-install -o root -g root -m 0644 "$REPO/app/templates/party.html" /opt/otelsa-party/templates/party.html
+for t in party.html _live.html; do
+  install -o root -g root -m 0644 "$REPO/app/templates/$t" "/opt/otelsa-party/templates/$t"
+done
 # Der Token muss fuer den Dienst lesbar sein, sonst nur fuer root.
 chgrp otelsa-party "$TOKEN_FILE" && chmod 0640 "$TOKEN_FILE"
 if [ ! -f /etc/otelsa-party.env ]; then

@@ -75,6 +75,13 @@ location = /e/party.css {
     error_log /var/log/nginx/party-error.log crit;
 }
 
+location = /e/party.js {
+    root /var/www/otelsa/party/e;
+    try_files /party.js =404;
+    include /etc/nginx/snippets/otelsa-party-headers.conf;
+    access_log /var/log/nginx/party.log party;
+}
+
 location = /e/invalid.css {
     root /var/www/otelsa/party/invalid;
     try_files /invalid.css =404;

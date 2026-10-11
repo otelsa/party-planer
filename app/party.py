@@ -164,23 +164,10 @@ def entry(token):
 @app.get("/party")
 @require_session
 def party():
-    con = db()
-    gaeste = con.execute(
-        "SELECT * FROM teilnehmer ORDER BY CASE status WHEN 'ja' THEN 0 WHEN 'vielleicht' THEN 1 ELSE 2 END, erstellt"
-    ).fetchall()
-    mit = con.execute(
-        "SELECT m.*, t.anzeigename, t.session_id FROM mitbringsel m "
-        "JOIN teilnehmer t ON t.id = m.teilnehmer_id ORDER BY m.erstellt"
-    ).fetchall()
-    zahlen = {
-        "personen": sum(r["anzahl"] for r in gaeste if r["status"] == "ja"),
-        "anmeldungen": sum(1 for r in gaeste if r["status"] == "ja"),
-        "vielleicht": sum(1 for r in gaeste if r["status"] == "vielleicht"),
-        "absagen": sum(1 for r in gaeste if r["status"] == "nein"),
-    }
+    gaeste, mit, zahlen = listen_daten()
     return render_template(
         "party.html", me=me(), gaeste=gaeste, mitbringsel=mit, zahlen=zahlen,
-        csrf=csrf_token(), sid=g.session["id"],
+        csrf=csrf_token(), sid=g.session["id"], stand=stand_wert(),
     )
 
 
@@ -265,6 +252,51 @@ def mitbringsel_loeschen(eintrag_id):
     )
     db().commit()
     return redirect("/party", code=303)
+
+
+def stand_wert():
+    """Billiger Fingerabdruck des veraenderlichen Teils: aendert sich bei jeder
+    Anmeldung, Aenderung, Loeschung und jedem Mitbringsel."""
+    con = db()
+    t = con.execute("SELECT COUNT(*) c, COALESCE(MAX(geaendert), '') m FROM teilnehmer").fetchone()
+    mi = con.execute("SELECT COUNT(*) c, COALESCE(MAX(erstellt), '') m FROM mitbringsel").fetchone()
+    return f"{t['c']}-{t['m']}-{mi['c']}-{mi['m']}"
+
+
+def listen_daten():
+    con = db()
+    gaeste = con.execute(
+        "SELECT * FROM teilnehmer ORDER BY CASE status WHEN 'ja' THEN 0 WHEN 'vielleicht' THEN 1 ELSE 2 END, erstellt"
+    ).fetchall()
+    mit = con.execute(
+        "SELECT m.*, t.anzeigename, t.session_id FROM mitbringsel m "
+        "JOIN teilnehmer t ON t.id = m.teilnehmer_id ORDER BY m.erstellt"
+    ).fetchall()
+    zahlen = {
+        "personen": sum(r["anzahl"] for r in gaeste if r["status"] == "ja"),
+        "anmeldungen": sum(1 for r in gaeste if r["status"] == "ja"),
+        "vielleicht": sum(1 for r in gaeste if r["status"] == "vielleicht"),
+        "absagen": sum(1 for r in gaeste if r["status"] == "nein"),
+    }
+    return gaeste, mit, zahlen
+
+
+@app.get("/party/stand")
+@require_session
+def stand():
+    """Wird im Sekundentakt abgefragt - deshalb so klein wie moeglich."""
+    resp = make_response({"stand": stand_wert()})
+    resp.headers["Cache-Control"] = "no-store"
+    return resp
+
+
+@app.get("/party/listen")
+@require_session
+def listen():
+    """Nur der veraenderliche Teil der Seite, zum Austauschen im Browser."""
+    gaeste, mit, zahlen = listen_daten()
+    return render_template("_live.html", gaeste=gaeste, mitbringsel=mit, zahlen=zahlen,
+                           me=me(), csrf=csrf_token(), sid=g.session["id"])
 
 
 @app.get("/party/gesundheit")

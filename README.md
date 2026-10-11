@@ -6,6 +6,7 @@ Architektur & Security-Review“.
 
 **Stand: lauffähige Anmeldung.** Flask + SQLite hinter nginx, als systemd-Dienst.
 Anmelden, ändern, löschen und Mitbringliste funktionieren; Inhalte des Plans sind Platzhalter.
+Die offene Seite aktualisiert sich selbst, wenn jemand anderes etwas ändert.
 Noch nicht gebaut: Wunschliste, Einzel-Einladungen, Admin-Bereich, automatische Löschung.
 
 ## Aufbau
@@ -62,6 +63,8 @@ wie das Cookie).
 | `/e/<token>` | tauscht den Token gegen das Sitzungs-Cookie, 303 auf `/party` |
 | `/party` | die Seite; ohne Sitzung 303 zur Hinweisseite |
 | `/party/...` | Formulare (POST, mit CSRF-Token) |
+| `/party/stand` | winziges JSON mit dem Änderungsstand, vom Browser im Takt abgefragt |
+| `/party/listen` | nur der veränderliche Ausschnitt (Zahlen und Listen) zum Austauschen |
 | `/e/<token>/` | 301 auf die Variante ohne Schrägstrich |
 | `/e/*.css` | Stylesheets, ohne Token im Pfad (sonst stünden sie im Referer) |
 | `/e/<alles andere>` | neutrale Hinweisseite mit Status 200 |
@@ -96,6 +99,19 @@ nginx-Aufbau mit einem Testtoken auf und prüft das komplette Verhalten: Zugang 
 Token, neutrale Hinweisseite statt 404, Stylesheets, Weiterleitung, abgewiesene Methoden,
 Sicherheits-Kopfzeilen, nichts Verräterisches in der Vorschau, Rate-Limit und dass in
 keinem Log ein Token steht.
+
+## Aktualisierung bei offener Seite
+
+`site/e/party.js` fragt alle 8 Sekunden `/party/stand` ab — ein JSON mit einem
+Fingerabdruck aus Anzahl und jüngster Änderungszeit. Ändert er sich, holt das Skript
+`/party/listen` und tauscht nur den Bereich `#live` aus; kurz erscheint „Liste aktualisiert“.
+
+- **Das Formular wird nie angefasst**, damit niemandem die Eingabe verschwindet.
+- Im Hintergrund-Tab wird auf 60 Sekunden gedrosselt, beim Zurückwechseln sofort geprüft.
+- **Ohne JavaScript** bleibt alles benutzbar, die Seite aktualisiert sich dann nur beim Neuladen.
+- Die CSP erlaubt dafür `script-src 'self'` und `connect-src 'self'` — nichts Fremdes, nichts Inline.
+- Bewusst kein Server-Sent-Events oder WebSocket: Die App läuft mit zwei Gunicorn-Workern,
+  die Dauerverbindungen blockieren würden. Bei 40 Gästen ist Nachfragen sparsamer.
 
 ## Noch offen
 
