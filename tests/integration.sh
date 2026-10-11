@@ -52,13 +52,12 @@ grep -q 'Projekt' <<<"$page"        && pass "Seite zeigt den Codenamen" || fail 
 grep -q 'Gesamt\|gesamt' <<<"$page" && pass "Gesamtzahl vorhanden" || fail "Gesamtzahl fehlt"
 grep -q 'Anzeigen als' <<<"$page"   && pass "Feld 'Anzeigen als'" || fail "Feld 'Anzeigen als' fehlt"
 grep -q 'Anzahl' <<<"$page"         && pass "Feld 'Anzahl'" || fail "Feld 'Anzahl' fehlt"
-grep -qi 'cookie' <<<"$page"        && pass "Seite erklaert den Zugang ohne Cookie" || fail "Hinweis zum Zugang fehlt"
-grep -q 'PIN für Änderungen' <<<"$page" && pass "PIN wird beim Anmelden gesetzt" || fail "PIN-Feld fehlt"
-grep -c 'field--pin' <<<"$page" | grep -qE '^[3-9]' && pass "PIN zweimal eingeben plus Freischalten" || fail "zu wenige PIN-Felder"
-grep -q 'Freischalten' <<<"$page"   && pass "Eintrag laesst sich mit PIN freischalten" || fail "Freischalten fehlt"
-grep -qi 'persönlichen Link\|/me/' <<<"$page" && fail "persoenlicher Link ist nicht mehr vorgesehen" || pass "kein persoenlicher Link mehr"
+grep -qi 'Cookie' <<<"$page"        && pass "Seite erklaert das technisch notwendige Cookie" || fail "Cookie-Hinweis fehlt"
+grep -q 'angemeldet als' <<<"$page" && pass "Zustand 'angemeldet' wird gezeigt" || fail "Zustand 'angemeldet' fehlt"
+grep -q 'Link aus der WhatsApp-Gruppe' <<<"$page" && pass "Hinweis zum Gruppenlink" || fail "Hinweis zum Gruppenlink fehlt"
 grep -q 'aria-label="Bearbeiten"' <<<"$page" && grep -q 'aria-label="Löschen"' <<<"$page" \
   && pass "eigene Eintraege haben Bearbeiten und Loeschen" || fail "Aktionen an eigenen Eintraegen fehlen"
+grep -qiE 'PIN|persönlichen Link|/me/' <<<"$page" && fail "PIN oder persoenlicher Link noch vorhanden" || pass "weder PIN noch persoenlicher Link"
 own=$(grep -c 'class="is-own"' <<<"$page")
 [ "$own" -ge 2 ] && pass "eigene Eintraege markiert ($own)" || fail "zu wenige eigene Eintraege markiert: $own"
 grep -qi '<title>Einladung</title>' <<<"$page" && pass "neutraler Titel" || fail "Titel verraet etwas"
@@ -75,9 +74,11 @@ for css in party otelsa-tokens otelsa-components invalid; do
 done
 grep -q 'href="party.css"' <<<"$page" && pass "Seite laedt ihr Stylesheet ohne Token im Pfad" || fail "Stylesheet-Referenz unerwartet"
 
-echo "== Kein Cookie"
+echo "== Cookies"
+# Der Prototyp ist statisch und setzt noch keines. Die App setzt spaeter genau ein
+# technisch notwendiges Cookie (HttpOnly, Secure, SameSite=Lax) - dann wird hier das erwartet.
 set_cookie=$(headers "$BASE/e/$TOKEN" | grep -ci '^set-cookie' || true)
-[ "$set_cookie" = "0" ] && pass "Server setzt kein Cookie" || fail "Server setzt $set_cookie Cookie(s)"
+[ "$set_cookie" = "0" ] && pass "statischer Prototyp setzt kein Cookie" || fail "unerwartetes Cookie ($set_cookie)"
 
 echo "== Kopfzeilen"
 h=$(headers "$BASE/e/$TOKEN")

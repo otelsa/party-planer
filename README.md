@@ -29,25 +29,28 @@ sudo scripts/deploy.sh
 
 ## Wie Teilnehmer erkannt werden
 
-**Ein Gruppenlink für alle, kein Cookie, keine persönlichen Links, keine Geräte-ID.**
-Beim Anmelden wählt jeder Gast eine vierstellige PIN. Zum Ändern: denselben Link öffnen,
-den eigenen Eintrag antippen, PIN eingeben — danach erscheinen Bearbeiten und Löschen.
-Funktioniert auf jedem Gerät.
+**Ein Gruppenlink für alle. Das Gerät ist der Nutzer.** Fast alle öffnen den Link vom Handy
+aus der WhatsApp-Gruppe. Beim ersten Speichern setzt der Server ein technisch notwendiges
+Cookie (HttpOnly, Secure, SameSite=Lax, 60 Tage), das nur sagt, welcher Eintrag zu diesem
+Gerät gehört. Danach erkennt die Seite den Gast wieder und zeigt an seinen Einträgen
+Bearbeiten und Löschen. Keine PIN, keine persönlichen Links, kein Konto, kein Banner
+(für technisch notwendige Cookies nicht nötig).
 
-Das Formular hat nur drei Angaben: **Anzeigen als**, **Anzahl** (Personen insgesamt,
-die Person selbst mitgezählt) und die **PIN** (zweimal).
+Das Formular hat zwei Angaben: **Anzeigen als** und **Anzahl** (Personen insgesamt,
+die Person selbst mitgezählt).
 
-| Fall | Lösung |
+| Fall | Was passiert |
 |---|---|
-| PIN vergessen | Organisator setzt sie zurück oder korrigiert den Eintrag |
-| Gast bringt jemanden mit | Anzahl erhöhen oder einen zweiten Eintrag anlegen |
+| Gleiches Gerät, Link erneut geöffnet | Eintrag wird wiedererkannt |
+| Anderer Browser oder PC | Neuer Gast; die Seite weist vorher darauf hin, immer den Link aus der Gruppe zu nehmen |
+| Doppelter Eintrag entstanden | Organisator führt zusammen oder löscht |
+| Browserdaten gelöscht | Wie ein neues Gerät |
 | Externe ohne Gruppenzugang | Einzel-Einladungslink `/i/<token>`, einmal nutzbar, 14 Tage gültig |
 
-**Was die PIN leistet und was nicht.** Sie verhindert, dass ein anderer Gast einen fremden
-Eintrag versehentlich oder aus Jux ändert. Sie ist kein Schutz gegen jemanden, der die
-Datenbank hat: vier Ziffern sind auch als Hash schnell durchprobiert. Deshalb:
-PIN nur gehasht speichern, wenige Fehlversuche je Eintrag und Stunde zulassen,
-und keine Daten auf der Seite, die mehr Schutz bräuchten.
+Bewusst verworfen: PIN je Eintrag (eine Hürde für alle, nur gegen Jux unter Gästen),
+persönliche Links (jeder müsste einen Link verwahren), Geräte-Fingerprints (unzuverlässig,
+datenschutzrechtlich schlechter), `localStorage` (bräuchte JavaScript, rechtlich dasselbe
+wie das Cookie).
 
 ## Wie der Zugang funktioniert
 
