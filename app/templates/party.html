@@ -1,0 +1,192 @@
+<!doctype html>
+<html lang="de" data-ot-mode="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Einladung</title>
+<meta name="robots" content="noindex, nofollow, noarchive, nosnippet, noimageindex, notranslate">
+<meta name="googlebot" content="noindex, nofollow">
+<meta name="referrer" content="no-referrer">
+<meta name="description" content="Private Einladung.">
+<meta property="og:title" content="Einladung">
+<meta property="og:description" content="Private Einladung.">
+<meta property="og:type" content="website">
+<meta name="theme-color" content="#06111b">
+<link rel="stylesheet" href="/e/otelsa-tokens.css">
+<link rel="stylesheet" href="/e/otelsa-components.css">
+<link rel="stylesheet" href="/e/party.css">
+</head>
+<body class="ot-app">
+
+<header class="head">
+  <p class="eyebrow">Streng geheim</p>
+  <h1>Projekt&nbsp;Nordstern</h1>
+  <p class="lead">Überraschungsfeier. Bitte diesen Link nicht weiterleiten und nichts in offene Runden posten.</p>
+</header>
+
+<main>
+
+  <section class="ot-card" id="plan">
+    <h2 class="ot-card__title">Der Plan</h2>
+    <ul class="ot-rows">
+      <li><span class="ot-k">Wann</span><span class="ot-v">Sa, TT.MM.JJJJ · 18:00 Uhr</span></li>
+      <li><span class="ot-k">Treffpunkt</span><span class="ot-v">17:30 Uhr</span></li>
+      <li><span class="ot-k">Überraschung</span><span class="ot-v">18:15 Uhr</span></li>
+      <li><span class="ot-k">Wo</span><span class="ot-v">Ort, Straße 1</span></li>
+    </ul>
+    <p class="note">Ablauf: alle sind vor dem Brautpaar da, Begrüßung draußen, danach Buffet. (Platzhalter)</p>
+  </section>
+
+  <section class="ot-card" id="anmeldung">
+    <h2 class="ot-card__title">{% if me %}Deine Angaben{% else %}Kommst du?{% endif %}</h2>
+
+    {% if me %}
+      <p class="angemeldet">Angemeldet als <strong>{{ me.anzeigename }}</strong> · {{ me.anzahl }}
+        {{ "Person" if me.anzahl == 1 else "Personen" }}</p>
+    {% endif %}
+
+    <form class="form" method="post" action="/party/eintrag">
+      <input type="hidden" name="csrf" value="{{ csrf }}">
+      <fieldset>
+        <legend>Deine Antwort</legend>
+        <div class="choices">
+          {% for wert, text in [("ja", "Ja, ich komme"), ("vielleicht", "Vielleicht"), ("nein", "Leider nicht")] %}
+          <label class="choice"><input type="radio" name="status" value="{{ wert }}"
+            {{ "checked" if (me.status if me else "ja") == wert }}> <span>{{ text }}</span></label>
+          {% endfor %}
+        </div>
+      </fieldset>
+
+      <fieldset>
+        <legend>Ankunft</legend>
+        <div class="choices">
+          <label class="choice"><input type="radio" name="ankunft" value="beginn"
+            {{ "checked" if (me.ankunft if me else "beginn") == "beginn" }}> <span>Ab Beginn</span></label>
+          <label class="choice"><input type="radio" name="ankunft" value="spaeter"
+            {{ "checked" if me and me.ankunft == "spaeter" }}> <span>Später, ca.</span></label>
+          <input class="field field--time" type="time" name="ankunft_zeit"
+                 value="{{ me.ankunft_zeit if me and me.ankunft_zeit else '' }}" aria-label="Ungefähre Ankunftszeit">
+        </div>
+      </fieldset>
+
+      <fieldset>
+        <legend>Deine Angaben</legend>
+        <label class="labelled">Anzeigen als
+          <input class="field" type="text" name="anzeigename" maxlength="40" required
+                 value="{{ me.anzeigename if me else '' }}" placeholder="z. B. Anna K.">
+        </label>
+        <label class="labelled">Anzahl <em>(Personen insgesamt, du mitgezählt)</em>
+          <input class="field field--num" type="number" name="anzahl" min="1" max="6"
+                 value="{{ me.anzahl if me else 1 }}">
+        </label>
+      </fieldset>
+
+      <div class="actions">
+        <button class="ot-btn ot-btn--primary" type="submit">{{ "Änderungen speichern" if me else "Speichern" }}</button>
+      </div>
+    </form>
+
+    {% if me %}
+    <form method="post" action="/party/eintrag/loeschen" class="inline-form">
+      <input type="hidden" name="csrf" value="{{ csrf }}">
+      <button class="ot-btn ot-btn--danger" type="submit">Meine Daten löschen</button>
+    </form>
+    {% endif %}
+
+    <p class="note">Dein Handy merkt sich deinen Eintrag, du musst dir nichts notieren.
+      Dafür reicht ein technisch notwendiges Cookie; es speichert nur, welcher Eintrag dir gehört.</p>
+    <p class="hinweis">Öffne die Seite immer über den Link aus der WhatsApp-Gruppe.
+      In einem anderen Browser bist du ein neuer Gast und legst versehentlich einen zweiten
+      Eintrag an. Ist das passiert: sag einem Organisator Bescheid, er räumt es auf.</p>
+  </section>
+
+  <section class="ot-card" id="zahlen">
+    <h2 class="ot-card__title">Wie viele kommen</h2>
+    <div class="counts">
+      <div class="count"><span class="ot-value">{{ zahlen.personen }}</span><span class="count__lbl">Personen gesamt</span></div>
+      <div class="count"><span class="ot-value">{{ zahlen.anmeldungen }}</span><span class="count__lbl">Anmeldungen</span></div>
+      <div class="count"><span class="ot-value">{{ zahlen.vielleicht }}</span><span class="count__lbl">Vielleicht</span></div>
+      <div class="count"><span class="ot-value">{{ zahlen.absagen }}</span><span class="count__lbl">Absagen</span></div>
+    </div>
+    <p class="note">Die Gesamtzahl summiert die Anzahl aller Zusagen.</p>
+  </section>
+
+  <section class="ot-card" id="gaeste">
+    <h2 class="ot-card__title">Wer kommt <span class="ot-card__note">{{ gaeste|length }} Einträge</span></h2>
+    <ul class="ot-list guests">
+      {% for gast in gaeste %}
+      <li{{ ' class="is-own"'|safe if gast.session_id == sid }}>
+        <span class="guest">{{ gast.anzeigename }}</span>
+        {% if gast.status == 'ja' %}<span class="ot-tag ot-tag--ok">{{ "ab Beginn" if gast.ankunft == "beginn" else "ab ca. " ~ (gast.ankunft_zeit or "später") }}</span>
+        {% elif gast.status == 'vielleicht' %}<span class="ot-tag ot-tag--warn">vielleicht</span>
+        {% else %}<span class="ot-tag">abgesagt</span>{% endif %}
+        <span class="ot-meta">{{ gast.anzahl }} {{ "Person" if gast.anzahl == 1 else "Personen" }}</span>
+        {% if gast.session_id == sid %}
+        <span class="rowacts">
+          <a class="iconbtn" href="#anmeldung" aria-label="Bearbeiten" title="Bearbeiten"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16z"/><path d="M14 5l4 4"/></svg></a>
+        </span>
+        {% endif %}
+      </li>
+      {% else %}
+      <li class="ot-empty">Noch niemand angemeldet.</li>
+      {% endfor %}
+    </ul>
+  </section>
+
+  <section class="ot-card" id="mitbringen">
+    <h2 class="ot-card__title">Wer bringt was mit</h2>
+    <ul class="ot-list">
+      {% for eintrag in mitbringsel %}
+      <li{{ ' class="is-own"'|safe if eintrag.session_id == sid }}>
+        <span class="guest">{{ eintrag.anzeigename }}</span>
+        <span class="ot-meta">{{ eintrag.text }} ({{ eintrag.kategorie }})</span>
+        {% if eintrag.session_id == sid %}
+        <span class="rowacts">
+          <form method="post" action="/party/mitbringsel/{{ eintrag.id }}/loeschen">
+            <input type="hidden" name="csrf" value="{{ csrf }}">
+            <button class="iconbtn" type="submit" aria-label="Löschen" title="Löschen"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 7h14"/><path d="M9 7V5h6v2"/><path d="M7 7l1 13h8l1-13"/></svg></button>
+          </form>
+        </span>
+        {% endif %}
+      </li>
+      {% else %}
+      <li class="ot-empty">Noch nichts eingetragen.</li>
+      {% endfor %}
+    </ul>
+
+    {% if me %}
+    <form class="form form--row" method="post" action="/party/mitbringsel">
+      <input type="hidden" name="csrf" value="{{ csrf }}">
+      <label class="labelled labelled--grow">Ich bringe mit
+        <input class="field" type="text" name="text" maxlength="80" required placeholder="z. B. Nudelsalat">
+      </label>
+      <label class="labelled">Kategorie
+        <select class="field" name="kategorie">
+          <option>Essen</option><option>Getränke</option><option>Sonstiges</option>
+        </select>
+      </label>
+      <button class="ot-btn" type="submit">Hinzufügen</button>
+    </form>
+    {% else %}
+    <p class="note">Melde dich oben an, dann kannst du etwas eintragen.</p>
+    {% endif %}
+  </section>
+
+  <section class="ot-card ot-card--warn" id="geheim">
+    <h2 class="ot-card__title">Bitte beachten</h2>
+    <ul class="bullets">
+      <li>Den Link nicht weiterleiten und nicht in andere Gruppen posten.</li>
+      <li>Keine Screenshots dieser Seite teilen.</li>
+      <li>Nichts posten, was das Brautpaar sehen könnte.</li>
+    </ul>
+  </section>
+
+</main>
+
+<footer class="foot">
+  <span>Private Seite · nur ein technisch notwendiges Cookie · wird nach der Feier gelöscht</span>
+  <span class="ot-empty">Datenschutzhinweis (Platzhalter)</span>
+</footer>
+
+</body>
+</html>

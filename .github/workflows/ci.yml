@@ -51,7 +51,7 @@ jobs:
         run: |
           apt-get update -qq
           DEBIAN_FRONTEND=noninteractive apt-get install -y -qq --no-install-recommends \
-            nginx curl ca-certificates >/dev/null
+            nginx curl ca-certificates python3-flask gunicorn >/dev/null
           nginx -v
 
       - name: Ausrollen wie auf dem Server
@@ -66,11 +66,25 @@ jobs:
       - name: nginx-Konfiguration pruefen
         run: nginx -t
 
+      - name: App starten
+        run: |
+          install -d -o root -g root /opt/otelsa-party/templates /tmp/party
+          # Wie auf dem Server, nur ohne systemd und ohne TLS.
+          PARTY_DB=/tmp/party/party.sqlite3 PARTY_TOKEN_FILE=/etc/otelsa-party-token \
+          PARTY_COOKIE_SECURE=0 PARTY_CSRF_KEY=ci-key \
+          gunicorn --chdir /opt/otelsa-party --workers 2 --bind 127.0.0.1:8081 \
+            --daemon --access-logfile /var/log/gunicorn.log --error-logfile /var/log/gunicorn.log party:app
+          for i in $(seq 20); do
+            curl -sf http://127.0.0.1:8081/party/gesundheit >/dev/null && break
+            sleep 0.5
+          done
+          curl -sf http://127.0.0.1:8081/party/gesundheit
+
       - name: nginx starten
         run: nginx
 
       - name: Verhaltenstests
-        run: BASE=http://127.0.0.1:8080 TOKEN="$PARTY_TOKEN" bash tests/integration.sh
+        run: FLOW=1 BASE=http://127.0.0.1:8080 TOKEN="$PARTY_TOKEN" bash tests/integration.sh
 
       - name: Token darf in keinem Log stehen
         run: |
@@ -82,4 +96,4 @@ jobs:
 
       - name: Logs bei Fehlschlag
         if: failure()
-        run: tail -n 40 /var/log/nginx/*.log || true
+        run: tail -n 40 /var/log/nginx/*.log /var/log/gunicorn.log || true

@@ -4,15 +4,18 @@ Testseite für die Überraschungsfeier, erreichbar über einen geheimen Link
 `https://otelsa.de/e/<token>`. Grundlage ist das Doc „Partyseite otelsa.de –
 Architektur & Security-Review“.
 
-**Stand: statischer Prototyp.** Kein Backend, keine Datenbank, nichts wird gespeichert.
-Alle Formularfelder sind gesperrt, alle Inhalte sind Platzhalter.
+**Stand: lauffähige Anmeldung.** Flask + SQLite hinter nginx, als systemd-Dienst.
+Anmelden, ändern, löschen und Mitbringliste funktionieren; Inhalte des Plans sind Platzhalter.
+Noch nicht gebaut: Wunschliste, Einzel-Einladungen, Admin-Bereich, automatische Löschung.
 
 ## Aufbau
 
 ```
-site/e/           die Seite (HTML + party.css + die OTELSA-Tokens aus pilarale/brand)
+app/              Flask-App (party.py) und Template (templates/party.html)
+site/e/           Stylesheets: party.css + die OTELSA-Tokens aus pilarale/brand
 site/invalid/     neutrale Hinweisseite für ungültige oder abgelaufene Links
-deploy/nginx/     Snippets: Token-Routen (Vorlage), Kopfzeilen, Log-Format
+deploy/nginx/     Snippets: Token-Routen (Vorlage), Kopfzeilen, Proxy, Log-Format
+deploy/systemd/   gehärteter Dienst otelsa-party.service
 scripts/deploy.sh ausrollen nach /var/www/otelsa/party und /etc/nginx/snippets
 tests/            Quellchecks (CSP-Tauglichkeit, neutrale Vorschau, kein Token im Repo)
 ```
@@ -56,7 +59,9 @@ wie das Cookie).
 
 | Pfad | Antwort |
 |---|---|
-| `/e/<token>` | die Seite |
+| `/e/<token>` | tauscht den Token gegen das Sitzungs-Cookie, 303 auf `/party` |
+| `/party` | die Seite; ohne Sitzung 303 zur Hinweisseite |
+| `/party/...` | Formulare (POST, mit CSRF-Token) |
 | `/e/<token>/` | 301 auf die Variante ohne Schrägstrich |
 | `/e/*.css` | Stylesheets, ohne Token im Pfad (sonst stünden sie im Referer) |
 | `/e/<alles andere>` | neutrale Hinweisseite mit Status 200 |
@@ -79,7 +84,12 @@ Tokens stehen in keinem Log:
 bash tests/static-checks.sh                      # Quellen (CSP, neutrale Vorschau, kein Token im Repo)
 sudo env BASE=https://otelsa.de RESOLVE=127.0.0.1 \
   TOKEN="$(sudo cat /etc/otelsa-party-token)" bash tests/integration.sh
+# FLOW=1 testet zusätzlich den echten Ablauf mit zwei Geräten und räumt danach auf
 ```
+
+Der Ablauf-Test legt zwei Teilnehmer an, prüft Wiedererkennung, Markierung eigener
+Einträge, dass fremde Einträge unantastbar sind, Ändern, fehlende Sitzung und ein
+falsches CSRF-Token — und löscht seine Testdaten am Ende wieder.
 
 Die CI (`.github/workflows/ci.yml`) baut in einem Debian-trixie-Container denselben
 nginx-Aufbau mit einem Testtoken auf und prüft das komplette Verhalten: Zugang nur mit

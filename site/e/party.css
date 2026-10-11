@@ -132,3 +132,12 @@ main { display: grid; gap: var(--ot-space-4); max-width: 44rem; margin: 0 auto; 
   color: var(--ot-fg-dim);
   font-size: var(--ot-text-sm);
 }
+
+/* --- Formular-Zeile (Mitbringen) --- */
+.form--row { display: flex; flex-wrap: wrap; align-items: flex-end; gap: var(--ot-space-3); margin-top: var(--ot-space-4); }
+.labelled--grow { flex: 1 1 14rem; }
+.labelled--inline { display: inline-flex; align-items: center; gap: var(--ot-space-2); margin-top: 0; }
+.inline-form { display: inline; }
+select.field { appearance: none; padding-right: var(--ot-space-4); }
+button.ot-btn { font: inherit; }
+.rowacts form { display: flex; }

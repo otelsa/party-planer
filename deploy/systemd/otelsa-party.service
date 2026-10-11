@@ -1,0 +1,52 @@
+[Unit]
+Description=Partyseite (Flask hinter nginx)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=exec
+User=otelsa-party
+Group=otelsa-party
+WorkingDirectory=/opt/otelsa-party
+Environment=PARTY_DB=/var/lib/otelsa-party/party.sqlite3
+Environment=PARTY_TOKEN_FILE=/etc/otelsa-party-token
+EnvironmentFile=/etc/otelsa-party.env
+ExecStart=/usr/bin/gunicorn --workers 2 --bind 127.0.0.1:8081 --access-logfile - --error-logfile - party:app
+Restart=on-failure
+RestartSec=2
+StateDirectory=otelsa-party
+StateDirectoryMode=0750
+
+# Haertung wie beim nginx-Dienst
+NoNewPrivileges=yes
+ProtectSystem=strict
+ProtectHome=yes
+PrivateTmp=yes
+PrivateDevices=yes
+ProtectKernelTunables=yes
+ProtectKernelModules=yes
+ProtectKernelLogs=yes
+ProtectControlGroups=yes
+ProtectClock=yes
+ProtectHostname=yes
+ProtectProc=invisible
+RestrictNamespaces=yes
+RestrictRealtime=yes
+RestrictSUIDSGID=yes
+LockPersonality=yes
+MemoryDenyWriteExecute=yes
+RemoveIPC=yes
+SystemCallArchitectures=native
+SystemCallFilter=@system-service
+SystemCallFilter=~@privileged @resources
+# Gunicorn benennt seine Worker (prctl) und setzt beim Start die Gruppen (setgroups);
+# ohne diese Ausnahmen sterben die Worker mit SIGSYS.
+SystemCallFilter=prctl setgroups setgid setuid
+RestrictAddressFamilies=AF_INET AF_UNIX
+CapabilityBoundingSet=
+IPAddressDeny=any
+IPAddressAllow=localhost
+UMask=0077
+
+[Install]
+WantedBy=multi-user.target

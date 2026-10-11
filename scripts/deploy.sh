@@ -18,9 +18,28 @@ esac
 [ "${#TOKEN}" -ge 22 ] || { echo "Token zu kurz (mindestens 22 Zeichen)" >&2; exit 1; }
 
 install -d -o root -g root -m 0755 "$WEB" "$WEB/e" "$WEB/invalid"
-for f in index.html party.css otelsa-tokens.css otelsa-components.css; do
+for f in party.css otelsa-tokens.css otelsa-components.css; do
   install -o root -g root -m 0644 "$REPO/site/e/$f" "$WEB/e/$f"
 done
+
+# --- App ---
+id -u otelsa-party >/dev/null 2>&1 || useradd --system --no-create-home --shell /usr/sbin/nologin otelsa-party
+install -d -o root -g root -m 0755 /opt/otelsa-party /opt/otelsa-party/templates
+install -o root -g root -m 0644 "$REPO/app/party.py" /opt/otelsa-party/party.py
+install -o root -g root -m 0644 "$REPO/app/templates/party.html" /opt/otelsa-party/templates/party.html
+# Der Token muss fuer den Dienst lesbar sein, sonst nur fuer root.
+chgrp otelsa-party "$TOKEN_FILE" && chmod 0640 "$TOKEN_FILE"
+if [ ! -f /etc/otelsa-party.env ]; then
+  install -o root -g otelsa-party -m 0640 /dev/null /etc/otelsa-party.env
+  printf 'PARTY_CSRF_KEY=%s\n' "$(head -c 32 /dev/urandom | base64 | tr -d '=+/')" >> /etc/otelsa-party.env
+fi
+install -o root -g root -m 0644 "$REPO/deploy/systemd/otelsa-party.service" /etc/systemd/system/otelsa-party.service
+install -o root -g root -m 0644 "$REPO/deploy/nginx/otelsa-party-proxy.conf" /etc/nginx/snippets/otelsa-party-proxy.conf
+if [ -z "${OTELSA_NO_RELOAD:-}" ]; then
+  systemctl daemon-reload
+  systemctl enable --now otelsa-party.service
+  systemctl restart otelsa-party.service
+fi
 for f in index.html invalid.css; do
   install -o root -g root -m 0644 "$REPO/site/invalid/$f" "$WEB/invalid/$f"
 done

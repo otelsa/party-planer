@@ -17,14 +17,22 @@
 # default-src 'none' + style-src 'self': kein JavaScript, keine fremden Quellen.
 # form-action 'self' ist fuer die spaetere App schon gesetzt.
 location = /e/@TOKEN@ {
-    root /var/www/otelsa/party/e;
-    try_files /index.html =404;
+    # Tauscht den Token gegen das Sitzungs-Cookie und leitet auf /party um.
+    proxy_pass http://127.0.0.1:8081;
+    include /etc/nginx/snippets/otelsa-party-proxy.conf;
     include /etc/nginx/snippets/otelsa-party-headers.conf;
     access_log /var/log/nginx/party.log party;
-    # nginx schreibt Rate-Limit-Meldungen samt URL ins Fehlerlog - das waere der Token.
-    # Deshalb hier ein eigenes Fehlerlog ab Stufe "crit" und Limit-Meldungen auf "info".
     limit_req_log_level info;
     error_log /var/log/nginx/party-error.log crit;
+}
+
+location ^~ /party {
+    # Die Seite selbst; ohne gueltiges Cookie schickt die App zur Hinweisseite.
+    proxy_pass http://127.0.0.1:8081;
+    include /etc/nginx/snippets/otelsa-party-proxy.conf;
+    include /etc/nginx/snippets/otelsa-party-headers.conf;
+    # Formulare brauchen POST; die Methodensperre des Landingpage-Servers gilt hier nicht.
+    access_log /var/log/nginx/party.log party;
 }
 
 location = /e/@TOKEN@/ {
