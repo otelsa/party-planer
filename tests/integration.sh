@@ -105,9 +105,18 @@ sleep 2
 echo "== Logs ohne Token"
 if [ -r "$ACCESS_LOG" ]; then
   grep -q "$TOKEN" "$ACCESS_LOG" && fail "Token steht im Hauptlog" || pass "kein Token im Hauptlog"
-  grep -q '/e/<token>' "$ACCESS_LOG" && pass "Hauptlog maskiert /e/-Pfade" || fail "Hauptlog maskiert nicht"
+  # /e/-Zugriffe laufen in party.log; die Maskierung im Hauptlog ist der Fallback fuer
+  # Antworten ausserhalb dieser Locations - also nur pruefen, wenn es solche Zeilen gibt.
+  if grep -q ' /e/' "$ACCESS_LOG"; then
+    grep -q '/e/<token>' "$ACCESS_LOG" && pass "Hauptlog maskiert /e/-Pfade" || fail "Hauptlog maskiert nicht"
+  else
+    pass "keine /e/-Zeilen im Hauptlog (laufen in party.log)"
+  fi
 else
   printf 'übersprungen: %s nicht lesbar\n' "$ACCESS_LOG"
+fi
+if [ -r "$PARTY_LOG" ]; then
+  grep -q '/e/<token>' "$PARTY_LOG" && pass "Partylog schreibt /e/<token>" || fail "Partylog ohne maskierten Pfad"
 fi
 if [ -d /var/log/nginx ]; then
   found=$(grep -rl "$TOKEN" /var/log/nginx/ 2>/dev/null || true)
