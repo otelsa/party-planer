@@ -38,7 +38,11 @@ while read -r href; do
 done < <(grep -ohE 'href="[^"]+\.css"' app/templates/party.html site/invalid/index.html | cut -d'"' -f2 | sort -u)
 
 # Keine echten Daten im Prototyp
-grep -qiE 'projekt.nordstern|TT\.MM\.JJJJ' app/templates/party.html && pass "Platzhalter statt echter Daten" || fail "Platzhalter fehlen"
+# Der Plan steht in der Datenbank; im Repo duerfen nur die Vorgabe-Platzhalter stehen.
+grep -qE 'Projekt Nordstern|TT\.MM\.JJJJ' app/party.py \
+  && pass "nur Platzhalter im Repo, echte Daten pflegt der Adminbereich" || fail "Platzhalter fehlen"
+grep -q 'plan.codename' app/templates/party.html \
+  && pass "Seite zeigt den gepflegten Plan" || fail "Template liest den Plan nicht"
 # Zugang ohne Cookie: die Seite darf keines setzen oder lesen wollen.
 # Das Cookie setzt spaeter der Server; die Seite selbst braucht keinen Skriptzugriff darauf.
 grep -qi 'document.cookie\|localStorage\|sessionStorage' app/templates/party.html \
