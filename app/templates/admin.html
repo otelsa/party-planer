@@ -1,0 +1,137 @@
+<!doctype html>
+<html lang="de" data-ot-mode="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Einladung</title>
+<meta name="robots" content="noindex, nofollow, noarchive, nosnippet, noimageindex, notranslate">
+<meta name="referrer" content="no-referrer">
+<meta name="theme-color" content="#06111b">
+<link rel="stylesheet" href="/e/otelsa-tokens.css">
+<link rel="stylesheet" href="/e/otelsa-components.css">
+<link rel="stylesheet" href="/e/party.css">
+</head>
+<body class="ot-app">
+
+<header class="head">
+  <p class="eyebrow">Organisation</p>
+  <h1>{{ plan.codename }}</h1>
+  <p class="lead">{{ zahlen.personen }} Personen zugesagt · {{ gaeste|length }} Einträge ·
+    {{ zahlen.sitzungen }} Geräte</p>
+</header>
+
+<main>
+
+  <section class="ot-card" id="plan">
+    <h2 class="ot-card__title">Plan pflegen</h2>
+    <form class="form" method="post" action="/admin/plan">
+      <input type="hidden" name="csrf" value="{{ csrf }}">
+      <label class="labelled">Codename
+        <input class="field" type="text" name="codename" maxlength="200" value="{{ plan.codename }}"></label>
+      <label class="labelled">Wann
+        <input class="field" type="text" name="wann" maxlength="200" value="{{ plan.wann }}"
+               placeholder="Sa, 14.03.2026 · 18:00 Uhr"></label>
+      <label class="labelled">Treffpunkt
+        <input class="field" type="text" name="treffpunkt" maxlength="200" value="{{ plan.treffpunkt or '' }}"></label>
+      <label class="labelled">Überraschung
+        <input class="field" type="text" name="ueberraschung" maxlength="200" value="{{ plan.ueberraschung or '' }}"></label>
+      <label class="labelled">Wo
+        <input class="field" type="text" name="ort" maxlength="200" value="{{ plan.ort or '' }}"></label>
+      <label class="labelled">Ablauf
+        <textarea class="field field--text" name="ablauf" rows="3" maxlength="600">{{ plan.ablauf or '' }}</textarea></label>
+      <div class="actions"><button class="ot-btn ot-btn--primary" type="submit">Plan speichern</button></div>
+    </form>
+  </section>
+
+  <section class="ot-card" id="wuensche">
+    <h2 class="ot-card__title">Wunschliste</h2>
+    <ul class="mitliste wunschliste">
+      {% for wunsch in wuensche %}
+      <li>
+        <span class="sache">{{ wunsch.text }}{% if wunsch.menge %} <em class="menge">{{ wunsch.menge }}</em>{% endif %}</span>
+        <span class="von">{{ wunsch.anzeigename if wunsch.uebernommen_von else 'offen' }}</span>
+        <span class="rowacts">
+          {% if wunsch.uebernommen_von %}
+          <form method="post" action="/admin/wunsch/{{ wunsch.id }}/freigeben">
+            <input type="hidden" name="csrf" value="{{ csrf }}">
+            <button class="ot-btn ot-btn--quiet" type="submit">Freigeben</button>
+          </form>
+          {% endif %}
+          <form method="post" action="/admin/wunsch/{{ wunsch.id }}/loeschen">
+            <input type="hidden" name="csrf" value="{{ csrf }}">
+            <button class="iconbtn iconbtn--klein" type="submit" aria-label="Löschen" title="Löschen"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 7h14"/><path d="M9 7V5h6v2"/><path d="M7 7l1 13h8l1-13"/></svg></button>
+          </form>
+        </span>
+      </li>
+      {% else %}
+      <li class="ot-empty">Noch kein Wunsch angelegt.</li>
+      {% endfor %}
+    </ul>
+    <form class="form form--row" method="post" action="/admin/wunsch">
+      <input type="hidden" name="csrf" value="{{ csrf }}">
+      <label class="labelled labelled--grow">Wunsch
+        <input class="field" type="text" name="text" maxlength="80" required placeholder="z. B. Kuchen"></label>
+      <label class="labelled">Menge
+        <input class="field field--num" type="text" name="menge" maxlength="20" placeholder="für 40"></label>
+      <button class="ot-btn" type="submit">Hinzufügen</button>
+    </form>
+  </section>
+
+  <section class="ot-card" id="gaeste">
+    <h2 class="ot-card__title">Teilnehmer <span class="ot-card__note">Doppelte hier löschen</span></h2>
+    <ul class="mitliste">
+      {% for gast in gaeste %}
+      <li>
+        <span class="sache">{{ gast.anzeigename }}</span>
+        <span class="von">{{ gast.anzahl }} · {{ gast.status }}{% if gast.ankunft == 'spaeter' %} · ab {{ gast.ankunft_zeit or '?' }}{% endif %}
+          · {{ gast.erstellt[:16]|replace('T', ' ') }}</span>
+        <form method="post" action="/admin/teilnehmer/{{ gast.id }}/loeschen">
+          <input type="hidden" name="csrf" value="{{ csrf }}">
+          <button class="iconbtn iconbtn--klein" type="submit" aria-label="Löschen" title="Löschen"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 7h14"/><path d="M9 7V5h6v2"/><path d="M7 7l1 13h8l1-13"/></svg></button>
+        </form>
+      </li>
+      {% else %}
+      <li class="ot-empty">Noch niemand angemeldet.</li>
+      {% endfor %}
+    </ul>
+  </section>
+
+  <section class="ot-card" id="mitbringen">
+    <h2 class="ot-card__title">Mitbringsel</h2>
+    <ul class="mitliste">
+      {% for eintrag in mitbringsel %}
+      <li>
+        <span class="sache">{{ eintrag.text }}</span>
+        <span class="von">{{ eintrag.anzeigename }} · {{ eintrag.kategorie }}</span>
+        <form method="post" action="/admin/mitbringsel/{{ eintrag.id }}/loeschen">
+          <input type="hidden" name="csrf" value="{{ csrf }}">
+          <button class="iconbtn iconbtn--klein" type="submit" aria-label="Löschen" title="Löschen"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 7h14"/><path d="M9 7V5h6v2"/><path d="M7 7l1 13h8l1-13"/></svg></button>
+        </form>
+      </li>
+      {% else %}
+      <li class="ot-empty">Noch nichts eingetragen.</li>
+      {% endfor %}
+    </ul>
+  </section>
+
+  <section class="ot-card ot-card--warn" id="daten">
+    <h2 class="ot-card__title">Daten</h2>
+    <div class="actions"><a class="ot-btn" href="/admin/export.csv">Export als CSV</a></div>
+    <form class="form form--row" method="post" action="/admin/alles-loeschen">
+      <input type="hidden" name="csrf" value="{{ csrf }}">
+      <label class="labelled labelled--grow">Alles löschen: tippe LOESCHEN
+        <input class="field" type="text" name="bestaetigung" placeholder="LOESCHEN" required></label>
+      <button class="ot-btn ot-btn--danger" type="submit">Alles löschen</button>
+    </form>
+    <p class="note">Entfernt Teilnehmer, Mitbringsel, Wünsche und alle Sitzungen. Der Plan bleibt.</p>
+  </section>
+
+</main>
+
+<footer class="foot">
+  <span>Adminbereich · nicht in der Gruppe teilen</span>
+  <span class="ot-empty">{{ plan.geaendert[:16]|replace('T', ' ') if plan.geaendert else '' }}</span>
+</footer>
+
+</body>
+</html>

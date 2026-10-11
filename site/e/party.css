@@ -199,3 +199,11 @@ button.ot-btn { font: inherit; }
 
 .iconbtn--klein { width: 1.9rem; height: 1.9rem; border: 0; background: transparent; vertical-align: -0.35rem; }
 .iconbtn--klein svg { width: 0.95rem; height: 0.95rem; }
+
+/* --- Wunschliste --- */
+.wunschliste .menge { font-style: normal; font-size: var(--ot-text-xs); color: var(--ot-fg-faint); }
+.wunschliste form { margin-left: auto; }
+.wunschliste li.is-own .sache { color: var(--ot-accent); }
+.ot-btn--quiet { min-height: 2.2rem; padding: 0 var(--ot-space-3); background: transparent; color: var(--ot-fg-dim); font-size: var(--ot-text-sm); border: 1px solid var(--ot-line-strong); border-radius: var(--ot-radius-sm); cursor: pointer; }
+.ot-btn--quiet:hover { color: var(--ot-fg); }
+.field--text { min-height: 5rem; padding: var(--ot-space-2) var(--ot-space-3); line-height: 1.5; resize: vertical; }

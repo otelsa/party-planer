@@ -23,7 +23,7 @@
 
 <header class="head">
   <p class="eyebrow">Streng geheim</p>
-  <h1>Projekt&nbsp;Nordstern</h1>
+  <h1>{{ plan.codename }}</h1>
   <p class="lead">Überraschungsfeier. Bitte diesen Link nicht weiterleiten und nichts in offene Runden posten.</p>
 </header>
 
@@ -32,12 +32,12 @@
   <section class="ot-card" id="plan">
     <h2 class="ot-card__title">Der Plan</h2>
     <ul class="ot-rows">
-      <li><span class="ot-k">Wann</span><span class="ot-v">Sa, TT.MM.JJJJ · 18:00 Uhr</span></li>
-      <li><span class="ot-k">Treffpunkt</span><span class="ot-v">17:30 Uhr</span></li>
-      <li><span class="ot-k">Überraschung</span><span class="ot-v">18:15 Uhr</span></li>
-      <li><span class="ot-k">Wo</span><span class="ot-v">Ort, Straße 1</span></li>
+      <li><span class="ot-k">Wann</span><span class="ot-v">{{ plan.wann }}</span></li>
+      {% if plan.treffpunkt %}<li><span class="ot-k">Treffpunkt</span><span class="ot-v">{{ plan.treffpunkt }}</span></li>{% endif %}
+      {% if plan.ueberraschung %}<li><span class="ot-k">Überraschung</span><span class="ot-v">{{ plan.ueberraschung }}</span></li>{% endif %}
+      {% if plan.ort %}<li><span class="ot-k">Wo</span><span class="ot-v">{{ plan.ort }}</span></li>{% endif %}
     </ul>
-    <p class="note">Ablauf: alle sind vor dem Brautpaar da, Begrüßung draußen, danach Buffet. (Platzhalter)</p>
+    {% if plan.ablauf %}<p class="note">{{ plan.ablauf }}</p>{% endif %}
   </section>
 
   <section class="ot-card" id="anmeldung">

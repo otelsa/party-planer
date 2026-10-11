@@ -36,6 +36,36 @@
     {% endfor %}
   </section>
 
+  <section class="ot-card" id="wuensche">
+    <h2 class="ot-card__title">Was noch fehlt
+      <span class="ot-card__note">{{ wuensche|selectattr('uebernommen_von')|list|length }} von {{ wuensche|length }} übernommen</span></h2>
+    <ul class="mitliste wunschliste">
+      {% for wunsch in wuensche %}
+      <li{{ ' class="is-own"'|safe if wunsch.session_id and wunsch.session_id == sid }}>
+        <span class="sache">{{ wunsch.text }}{% if wunsch.menge %} <em class="menge">{{ wunsch.menge }}</em>{% endif %}</span>
+        {% if wunsch.uebernommen_von %}
+          <span class="von">{{ wunsch.anzeigename }}</span>
+          {% if wunsch.session_id == sid %}
+          <form method="post" action="/party/wunsch/{{ wunsch.id }}/freigeben">
+            <input type="hidden" name="csrf" value="{{ csrf }}">
+            <button class="ot-btn ot-btn--quiet" type="submit">Freigeben</button>
+          </form>
+          {% endif %}
+        {% elif me %}
+          <form method="post" action="/party/wunsch/{{ wunsch.id }}/uebernehmen">
+            <input type="hidden" name="csrf" value="{{ csrf }}">
+            <button class="ot-btn ot-btn--quiet" type="submit">Übernehmen</button>
+          </form>
+        {% else %}
+          <span class="von">offen</span>
+        {% endif %}
+      </li>
+      {% else %}
+      <li class="ot-empty">Nichts offen.</li>
+      {% endfor %}
+    </ul>
+  </section>
+
   <section class="ot-card" id="mitbringen">
     <h2 class="ot-card__title">Wer bringt was mit</h2>
     {% for gruppe in mitgruppen %}

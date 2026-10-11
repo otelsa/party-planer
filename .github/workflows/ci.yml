@@ -42,6 +42,7 @@ jobs:
     env:
       # Testtoken nur fuer die CI; der echte steht auf dem Server in /etc/otelsa-party-token.
       PARTY_TOKEN: ci-test-token-0123456789abcdef
+      PARTY_ADMIN_TOKEN: ci-admin-token-0123456789abcdef
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -57,7 +58,8 @@ jobs:
       - name: Ausrollen wie auf dem Server
         run: |
           printf '%s\n' "$PARTY_TOKEN" > /etc/otelsa-party-token
-          chmod 600 /etc/otelsa-party-token
+          printf '%s\n' "$PARTY_ADMIN_TOKEN" > /etc/otelsa-party-admin-token
+          chmod 600 /etc/otelsa-party-token /etc/otelsa-party-admin-token
           OTELSA_NO_RELOAD=1 bash scripts/deploy.sh
           # CI-Serverblock (kein TLS) anstelle der Produktions-vHosts
           install -m 0644 deploy/nginx/ci/nginx.conf /etc/nginx/nginx.conf
@@ -71,6 +73,7 @@ jobs:
           install -d -o root -g root /opt/otelsa-party/templates /tmp/party
           # Wie auf dem Server, nur ohne systemd und ohne TLS.
           PARTY_DB=/tmp/party/party.sqlite3 PARTY_TOKEN_FILE=/etc/otelsa-party-token \
+          PARTY_ADMIN_TOKEN_FILE=/etc/otelsa-party-admin-token \
           PARTY_COOKIE_SECURE=0 PARTY_CSRF_KEY=ci-key \
           gunicorn --chdir /opt/otelsa-party --workers 2 --bind 127.0.0.1:8081 \
             --daemon --access-logfile /var/log/gunicorn.log --error-logfile /var/log/gunicorn.log party:app
@@ -84,12 +87,16 @@ jobs:
         run: nginx
 
       - name: Verhaltenstests
-        run: FLOW=1 BASE=http://127.0.0.1:8080 TOKEN="$PARTY_TOKEN" bash tests/integration.sh
+        # ADMIN_DESTRUCTIVE: die Container-Datenbank ist ein Wegwerfstand, hier darf
+        # auch "Alles loeschen" geprueft werden.
+        run: |
+          FLOW=1 ADMIN_DESTRUCTIVE=1 BASE=http://127.0.0.1:8080 \
+            TOKEN="$PARTY_TOKEN" ADMIN_TOKEN="$PARTY_ADMIN_TOKEN" bash tests/integration.sh
 
       - name: Token darf in keinem Log stehen
         run: |
           # Doppelt gesichert, unabhaengig von den Tests oben.
-          if grep -rq "$PARTY_TOKEN" /var/log/nginx/; then
+          if grep -rqE "$PARTY_TOKEN|$PARTY_ADMIN_TOKEN" /var/log/nginx/; then
             echo "Token in einem Log gefunden:"; grep -rl "$PARTY_TOKEN" /var/log/nginx/; exit 1
           fi
           echo "kein Token in /var/log/nginx"

@@ -20,8 +20,10 @@ from functools import wraps
 from flask import Flask, abort, g, make_response, redirect, render_template, request
 
 TOKEN_FILE = os.environ.get("PARTY_TOKEN_FILE", "/etc/otelsa-party-token")
+ADMIN_TOKEN_FILE = os.environ.get("PARTY_ADMIN_TOKEN_FILE", "/etc/otelsa-party-admin-token")
 DB_PATH = os.environ.get("PARTY_DB", "/var/lib/otelsa-party/party.sqlite3")
 COOKIE = "party_sid"
+ADMIN_COOKIE = "party_admin"
 COOKIE_MAX_AGE = 60 * 60 * 24 * 60  # 60 Tage
 NAME_MAX = 40
 TEXT_MAX = 80
@@ -33,6 +35,11 @@ app = Flask(__name__)
 
 def group_token():
     with open(TOKEN_FILE) as fh:
+        return fh.read().strip()
+
+
+def admin_token():
+    with open(ADMIN_TOKEN_FILE) as fh:
         return fh.read().strip()
 
 
@@ -54,6 +61,24 @@ CREATE TABLE IF NOT EXISTS teilnehmer (
   geaendert TEXT NOT NULL
 );
 CREATE UNIQUE INDEX IF NOT EXISTS teilnehmer_session ON teilnehmer(session_id);
+CREATE TABLE IF NOT EXISTS wunsch (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  text TEXT NOT NULL,
+  menge TEXT,
+  uebernommen_von INTEGER REFERENCES teilnehmer(id) ON DELETE SET NULL,
+  uebernommen_am TEXT,
+  erstellt TEXT NOT NULL
+);
+CREATE TABLE IF NOT EXISTS plan (
+  id INTEGER PRIMARY KEY CHECK (id = 1),
+  codename TEXT NOT NULL,
+  wann TEXT NOT NULL,
+  treffpunkt TEXT,
+  ueberraschung TEXT,
+  ort TEXT,
+  ablauf TEXT,
+  geaendert TEXT NOT NULL
+);
 CREATE TABLE IF NOT EXISTS mitbringsel (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   teilnehmer_id INTEGER NOT NULL REFERENCES teilnehmer(id) ON DELETE CASCADE,
@@ -164,9 +189,9 @@ def entry(token):
 @app.get("/party")
 @require_session
 def party():
-    gaeste, mit, zahlen, gruppen, mitgruppen = listen_daten()
+    gaeste, mit, zahlen, gruppen, mitgruppen, wuensche = listen_daten()
     return render_template(
-        "party.html", gruppen=gruppen, mitgruppen=mitgruppen, me=me(), gaeste=gaeste, mitbringsel=mit, zahlen=zahlen,
+        "party.html", gruppen=gruppen, mitgruppen=mitgruppen, wuensche=wuensche, plan=plan(), me=me(), gaeste=gaeste, mitbringsel=mit, zahlen=zahlen,
         csrf=csrf_token(), sid=g.session["id"], stand=stand_wert(),
     )
 
@@ -254,13 +279,29 @@ def mitbringsel_loeschen(eintrag_id):
     return redirect("/party", code=303)
 
 
+PLAN_VORGABE = {
+    "codename": "Projekt Nordstern", "wann": "Sa, TT.MM.JJJJ · 18:00 Uhr",
+    "treffpunkt": "17:30 Uhr", "ueberraschung": "18:15 Uhr", "ort": "Ort, Straße 1",
+    "ablauf": "Alle sind vor dem Brautpaar da, Begrüßung draußen, danach Buffet. (Platzhalter)",
+}
+
+
+def plan():
+    row = db().execute("SELECT * FROM plan WHERE id = 1").fetchone()
+    return dict(row) if row else dict(PLAN_VORGABE, geaendert="")
+
+
 def stand_wert():
     """Billiger Fingerabdruck des veraenderlichen Teils: aendert sich bei jeder
     Anmeldung, Aenderung, Loeschung und jedem Mitbringsel."""
     con = db()
     t = con.execute("SELECT COUNT(*) c, COALESCE(MAX(geaendert), '') m FROM teilnehmer").fetchone()
     mi = con.execute("SELECT COUNT(*) c, COALESCE(MAX(erstellt), '') m FROM mitbringsel").fetchone()
-    return f"{t['c']}-{t['m']}-{mi['c']}-{mi['m']}"
+    w = con.execute(
+        "SELECT COUNT(*) c, COALESCE(MAX(erstellt), '') e, COALESCE(MAX(uebernommen_am), '') u FROM wunsch"
+    ).fetchone()
+    pl = con.execute("SELECT COALESCE(MAX(geaendert), '') m FROM plan").fetchone()
+    return f"{t['c']}-{t['m']}-{mi['c']}-{mi['m']}-{w['c']}-{w['e']}-{w['u']}-{pl['m']}"
 
 
 def listen_daten():
@@ -299,6 +340,11 @@ def listen_daten():
                 "personen": sum(r["anzahl"] for r in leute),
             })
 
+    wuensche = con.execute(
+        "SELECT w.*, t.anzeigename, t.session_id FROM wunsch w "
+        "LEFT JOIN teilnehmer t ON t.id = w.uebernommen_von ORDER BY w.erstellt"
+    ).fetchall()
+
     # Mitbringsel nach Kategorie, feste Reihenfolge.
     mitgruppen = []
     for kategorie in ("Essen", "Getränke", "Sonstiges"):
@@ -306,7 +352,7 @@ def listen_daten():
         if sachen:
             mitgruppen.append({"titel": kategorie, "sachen": sachen})
 
-    return gaeste, mit, zahlen, gruppen, mitgruppen
+    return gaeste, mit, zahlen, gruppen, mitgruppen, wuensche
 
 
 @app.get("/party/stand")
@@ -322,10 +368,205 @@ def stand():
 @require_session
 def listen():
     """Nur der veraenderliche Teil der Seite, zum Austauschen im Browser."""
-    gaeste, mit, zahlen, gruppen, mitgruppen = listen_daten()
+    gaeste, mit, zahlen, gruppen, mitgruppen, wuensche = listen_daten()
     return render_template("_live.html", gaeste=gaeste, mitbringsel=mit, zahlen=zahlen,
-                           gruppen=gruppen, mitgruppen=mitgruppen,
+                           gruppen=gruppen, mitgruppen=mitgruppen, wuensche=wuensche,
                            me=me(), csrf=csrf_token(), sid=g.session["id"])
+
+
+@app.post("/party/wunsch/<int:wunsch_id>/uebernehmen")
+@require_session
+def wunsch_uebernehmen(wunsch_id):
+    if not csrf_ok():
+        abort(400)
+    eigen = me()
+    if not eigen:
+        return redirect("/party?fehler=erst-anmelden", code=303)
+    # Nur wenn der Wunsch wirklich noch frei ist - in einer Anweisung, damit zwei
+    # gleichzeitige Klicks nicht beide gewinnen.
+    db().execute(
+        "UPDATE wunsch SET uebernommen_von = ?, uebernommen_am = ? WHERE id = ? AND uebernommen_von IS NULL",
+        (eigen["id"], now(), wunsch_id),
+    )
+    db().commit()
+    return redirect("/party#wuensche", code=303)
+
+
+@app.post("/party/wunsch/<int:wunsch_id>/freigeben")
+@require_session
+def wunsch_freigeben(wunsch_id):
+    if not csrf_ok():
+        abort(400)
+    db().execute(
+        "UPDATE wunsch SET uebernommen_von = NULL, uebernommen_am = NULL WHERE id = ?"
+        " AND uebernommen_von IN (SELECT id FROM teilnehmer WHERE session_id = ?)",
+        (wunsch_id, g.session["id"]),
+    )
+    db().commit()
+    return redirect("/party#wuensche", code=303)
+
+
+# ---------------------------------------------------------------- Admin
+
+def ist_admin():
+    raw = request.cookies.get(ADMIN_COOKIE)
+    return bool(raw) and secrets.compare_digest(raw, admin_token())
+
+
+def require_admin(view):
+    @wraps(view)
+    def wrapper(*a, **kw):
+        if not ist_admin():
+            abort(404)   # nach aussen nicht von "gibt es nicht" zu unterscheiden
+        return view(*a, **kw)
+    return wrapper
+
+
+def admin_csrf():
+    import hmac, hashlib
+    return hmac.new(app.config["CSRF_KEY"], b"admin", hashlib.sha256).hexdigest()[:32]
+
+
+def admin_csrf_ok():
+    return secrets.compare_digest(request.form.get("csrf", ""), admin_csrf())
+
+
+@app.get("/admin/<token>")
+def admin_entry(token):
+    if not secrets.compare_digest(token, admin_token()):
+        abort(404)
+    resp = make_response(redirect("/admin", code=303))
+    resp.set_cookie(ADMIN_COOKIE, token, max_age=COOKIE_MAX_AGE, httponly=True,
+                    secure=os.environ.get("PARTY_COOKIE_SECURE", "1") == "1",
+                    samesite="Lax", path="/")
+    return resp
+
+
+@app.get("/admin")
+@require_admin
+def admin():
+    con = db()
+    gaeste = con.execute("SELECT * FROM teilnehmer ORDER BY erstellt").fetchall()
+    mit = con.execute(
+        "SELECT m.*, t.anzeigename FROM mitbringsel m JOIN teilnehmer t ON t.id = m.teilnehmer_id"
+        " ORDER BY m.erstellt").fetchall()
+    wuensche = con.execute(
+        "SELECT w.*, t.anzeigename FROM wunsch w LEFT JOIN teilnehmer t ON t.id = w.uebernommen_von"
+        " ORDER BY w.erstellt").fetchall()
+    zahlen = {
+        "personen": sum(r["anzahl"] for r in gaeste if r["status"] == "ja"),
+        "sitzungen": con.execute("SELECT COUNT(*) c FROM session").fetchone()["c"],
+    }
+    return render_template("admin.html", plan=plan(), gaeste=gaeste, mitbringsel=mit,
+                           wuensche=wuensche, zahlen=zahlen, csrf=admin_csrf())
+
+
+@app.post("/admin/plan")
+@require_admin
+def admin_plan():
+    if not admin_csrf_ok():
+        abort(400)
+    felder = {f: clean(request.form.get(f), 200) for f in
+              ("codename", "wann", "treffpunkt", "ueberraschung", "ort")}
+    felder["ablauf"] = clean(request.form.get("ablauf"), 600)
+    db().execute(
+        "INSERT INTO plan (id, codename, wann, treffpunkt, ueberraschung, ort, ablauf, geaendert)"
+        " VALUES (1,?,?,?,?,?,?,?)"
+        " ON CONFLICT(id) DO UPDATE SET codename=excluded.codename, wann=excluded.wann,"
+        " treffpunkt=excluded.treffpunkt, ueberraschung=excluded.ueberraschung, ort=excluded.ort,"
+        " ablauf=excluded.ablauf, geaendert=excluded.geaendert",
+        (felder["codename"] or PLAN_VORGABE["codename"], felder["wann"] or PLAN_VORGABE["wann"],
+         felder["treffpunkt"], felder["ueberraschung"], felder["ort"], felder["ablauf"], now()),
+    )
+    db().commit()
+    return redirect("/admin", code=303)
+
+
+@app.post("/admin/wunsch")
+@require_admin
+def admin_wunsch():
+    if not admin_csrf_ok():
+        abort(400)
+    text = clean(request.form.get("text"), TEXT_MAX)
+    menge = clean(request.form.get("menge"), 20)
+    if text:
+        db().execute("INSERT INTO wunsch (text, menge, erstellt) VALUES (?,?,?)", (text, menge, now()))
+        db().commit()
+    return redirect("/admin#wuensche", code=303)
+
+
+@app.post("/admin/wunsch/<int:wunsch_id>/loeschen")
+@require_admin
+def admin_wunsch_loeschen(wunsch_id):
+    if not admin_csrf_ok():
+        abort(400)
+    db().execute("DELETE FROM wunsch WHERE id = ?", (wunsch_id,))
+    db().commit()
+    return redirect("/admin#wuensche", code=303)
+
+
+@app.post("/admin/wunsch/<int:wunsch_id>/freigeben")
+@require_admin
+def admin_wunsch_freigeben(wunsch_id):
+    if not admin_csrf_ok():
+        abort(400)
+    db().execute("UPDATE wunsch SET uebernommen_von = NULL, uebernommen_am = NULL WHERE id = ?", (wunsch_id,))
+    db().commit()
+    return redirect("/admin#wuensche", code=303)
+
+
+@app.post("/admin/teilnehmer/<int:teilnehmer_id>/loeschen")
+@require_admin
+def admin_teilnehmer_loeschen(teilnehmer_id):
+    if not admin_csrf_ok():
+        abort(400)
+    db().execute("DELETE FROM teilnehmer WHERE id = ?", (teilnehmer_id,))
+    db().commit()
+    return redirect("/admin", code=303)
+
+
+@app.post("/admin/mitbringsel/<int:eintrag_id>/loeschen")
+@require_admin
+def admin_mitbringsel_loeschen(eintrag_id):
+    if not admin_csrf_ok():
+        abort(400)
+    db().execute("DELETE FROM mitbringsel WHERE id = ?", (eintrag_id,))
+    db().commit()
+    return redirect("/admin", code=303)
+
+
+@app.get("/admin/export.csv")
+@require_admin
+def admin_export():
+    import csv, io
+    puffer = io.StringIO()
+    schreiber = csv.writer(puffer, delimiter=";")
+    schreiber.writerow(["Anzeigename", "Anzahl", "Status", "Ankunft", "Zeit", "Mitbringsel"])
+    con = db()
+    for r in con.execute("SELECT * FROM teilnehmer ORDER BY erstellt"):
+        sachen = "; ".join(
+            m["text"] for m in con.execute("SELECT text FROM mitbringsel WHERE teilnehmer_id = ?", (r["id"],)))
+        schreiber.writerow([r["anzeigename"], r["anzahl"], r["status"], r["ankunft"],
+                            r["ankunft_zeit"] or "", sachen])
+    resp = make_response(puffer.getvalue())
+    resp.headers["Content-Type"] = "text/csv; charset=utf-8"
+    resp.headers["Content-Disposition"] = 'attachment; filename="gaeste.csv"'
+    resp.headers["Cache-Control"] = "no-store"
+    return resp
+
+
+@app.post("/admin/alles-loeschen")
+@require_admin
+def admin_alles_loeschen():
+    if not admin_csrf_ok():
+        abort(400)
+    if request.form.get("bestaetigung") != "LOESCHEN":
+        return redirect("/admin?fehler=bestaetigung", code=303)
+    con = db()
+    for tabelle in ("mitbringsel", "wunsch", "teilnehmer", "session"):
+        con.execute(f"DELETE FROM {tabelle}")
+    con.commit()
+    return redirect("/admin", code=303)
 
 
 @app.get("/party/gesundheit")

@@ -26,11 +26,18 @@ done
 id -u otelsa-party >/dev/null 2>&1 || useradd --system --no-create-home --shell /usr/sbin/nologin otelsa-party
 install -d -o root -g root -m 0755 /opt/otelsa-party /opt/otelsa-party/templates
 install -o root -g root -m 0644 "$REPO/app/party.py" /opt/otelsa-party/party.py
-for t in party.html _live.html; do
+for t in party.html _live.html admin.html; do
   install -o root -g root -m 0644 "$REPO/app/templates/$t" "/opt/otelsa-party/templates/$t"
 done
 # Der Token muss fuer den Dienst lesbar sein, sonst nur fuer root.
 chgrp otelsa-party "$TOKEN_FILE" && chmod 0640 "$TOKEN_FILE"
+ADMIN_TOKEN_FILE=/etc/otelsa-party-admin-token
+if [ ! -f "$ADMIN_TOKEN_FILE" ]; then
+  install -o root -g otelsa-party -m 0640 /dev/null "$ADMIN_TOKEN_FILE"
+  python3 -c "import secrets; print(secrets.token_urlsafe(24))" > "$ADMIN_TOKEN_FILE"
+  chgrp otelsa-party "$ADMIN_TOKEN_FILE"; chmod 0640 "$ADMIN_TOKEN_FILE"
+  echo "Admin-Link angelegt (steht in $ADMIN_TOKEN_FILE)"
+fi
 if [ ! -f /etc/otelsa-party.env ]; then
   install -o root -g otelsa-party -m 0640 /dev/null /etc/otelsa-party.env
   printf 'PARTY_CSRF_KEY=%s\n' "$(head -c 32 /dev/urandom | base64 | tr -d '=+/')" >> /etc/otelsa-party.env
@@ -59,4 +66,6 @@ nginx -t -q
 if [ -z "${OTELSA_NO_RELOAD:-}" ]; then
   systemctl reload nginx
 fi
-echo "Deploy ok. Seite: https://otelsa.de/e/$TOKEN"
+echo "Deploy ok."
+echo "  Gruppenlink: https://otelsa.de/e/$TOKEN"
+echo "  Adminlink:   https://otelsa.de/admin/$(cat /etc/otelsa-party-admin-token)"

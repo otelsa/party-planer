@@ -13,10 +13,13 @@ cd "$(dirname "$0")/.." || exit 1
 
 BASE="${BASE:-http://127.0.0.1:8080}"
 TOKEN="${TOKEN:?TOKEN fehlt}"
+ADMIN_TOKEN="${ADMIN_TOKEN:-}"      # leer = Adminbereich wird uebersprungen
 ACCESS_LOG="${ACCESS_LOG:-/var/log/nginx/access.log}"
 PARTY_LOG="${PARTY_LOG:-/var/log/nginx/party.log}"
 
-CURL=(curl -sS --max-time 10 -H 'Connection: close')
+# --retry faengt die 429 des Rate-Limits ab: die Testfolge ist dichter als jeder Gast.
+CURL=(curl -sS --max-time 10 --retry 3 --retry-delay 1 -H 'Connection: close')
+CURL_ROH=(curl -sS --max-time 10 -H 'Connection: close')
 host=${BASE#*://}; host=${host%%/*}; host=${host%%:*}
 [ -n "${RESOLVE:-}" ] && CURL+=(--resolve "$host:443:$RESOLVE" --resolve "$host:80:$RESOLVE")
 [ -n "${INSECURE:-}" ] && CURL+=(-k)
@@ -37,6 +40,8 @@ expect() { # expect NAME WANT GOT
 sess=$(mktemp -d); trap 'rm -rf "$sess"' EXIT
 
 echo "== Zugang"
+expect "Adminbereich ohne Cookie" 404 "$(status "$BASE/admin")"
+expect "falscher Admin-Token"     404 "$(status "$BASE/admin/falscher-token")"
 expect "Gruppenlink tauscht gegen Sitzung" 303 "$(status -c "$sess/jar" "$BASE/e/$TOKEN")"
 loc=$("${CURL[@]}" -c "$sess/jar" -o /dev/null -w '%{redirect_url}' "$BASE/e/$TOKEN" 2>/dev/null)
 [ "${loc%%\?*}" = "$BASE/party" ] && pass "Einstieg leitet auf /party" || fail "Einstieg geht nach '$loc'"
@@ -59,7 +64,7 @@ headers -b "$sess/jar" "$BASE/party" | grep -qi '^set-cookie' \
 
 echo "== Inhalte"
 page=$("${CURL[@]}" -b "$sess/jar" "$BASE/party")
-grep -q 'Projekt' <<<"$page"        && pass "Seite zeigt den Codenamen" || fail "Codename fehlt"
+grep -qE '<h1>[^<]+</h1>' <<<"$page" && pass "Seite zeigt den Codenamen" || fail "Codename fehlt"
 grep -q 'Anzeigen als' <<<"$page"   && pass "Feld 'Anzeigen als'" || fail "Feld 'Anzeigen als' fehlt"
 grep -q 'name="anzahl"' <<<"$page"  && pass "Feld 'Anzahl'" || fail "Feld 'Anzahl' fehlt"
 grep -q 'Personen gesamt' <<<"$page" && pass "Gesamtzahl vorhanden" || fail "Gesamtzahl fehlt"
@@ -105,7 +110,7 @@ grep -qi 'x-robots-tag: noai' <<<"$h" && pass "KI-Crawler ausgeschlossen" || fai
 echo "== Rate-Limit"
 hits=0
 for _ in $(seq 1 60); do
-  [ "$(status "$BASE/e/party.css")" = "429" ] && hits=$((hits + 1))
+  [ "$("${CURL_ROH[@]}" -o /dev/null -w '%{http_code}' "$BASE/e/party.css")" = "429" ] && hits=$((hits + 1))
 done
 [ "$hits" -gt 0 ] && pass "Rate-Limit greift ($hits von 60 abgewiesen)" || fail "Rate-Limit greift nicht"
 sleep 2
@@ -200,11 +205,68 @@ if [ "${FLOW:-0}" = "1" ]; then
   grep -qi '<html' <<<"$teil" && fail "/party/listen liefert eine ganze Seite statt eines Ausschnitts" || pass "/party/listen ist nur der Ausschnitt"
   expect "/party/stand ohne Sitzung" 303 "$("${CURL[@]}" -o /dev/null -w '%{http_code}' "$BASE/party/stand")"
 
+  if [ -n "$ADMIN_TOKEN" ]; then
+    echo "== Adminbereich"
+    expect "Admin-Einstieg" 303 "$("${CURL[@]}" -c "$jar/admin" -o /dev/null -w '%{http_code}' "$BASE/admin/$ADMIN_TOKEN")"
+    adminseite=$("${CURL[@]}" -b "$jar/admin" "$BASE/admin")
+    grep -q 'Plan pflegen' <<<"$adminseite" && pass "Adminseite erreichbar" || fail "Adminseite fehlt"
+    cadm=$(grep -o 'name="csrf" value="[^"]*"' <<<"$adminseite" | head -1 | cut -d'"' -f4)
+    # Plan sichern, um ihn am Ende unveraendert zurueckzugeben.
+    feld() { grep -oE "name=\"$1\"[^>]*value=\"[^\"]*\"" <<<"$adminseite" | head -1 | sed 's/.*value="//; s/"$//'; }
+    alt_codename=$(feld codename); alt_wann=$(feld wann); alt_treff=$(feld treffpunkt)
+    alt_ueber=$(feld ueberraschung); alt_ort=$(feld ort)
+    alt_ablauf=$(sed -n 's/.*name="ablauf"[^>]*>\(.*\)<\/textarea>.*/\1/p' <<<"$adminseite" | head -1)
+    wunschname="Testwunsch-$$"
+
+    expect "Plan speichern" 303 "$(post "$jar/admin" -d "csrf=$cadm&codename=Testfeier&wann=Sa, 01.01.2030&ort=Testort&ablauf=Testablauf" "$BASE/admin/plan")"
+    "${CURL[@]}" -b "$jar/a" "$BASE/party" | grep -q 'Testort' && pass "Plan erscheint auf der Gastseite" || fail "Plan wirkt nicht"
+
+    expect "Wunsch anlegen" 303 "$(post "$jar/admin" -d "csrf=$cadm&text=$wunschname&menge=2x" "$BASE/admin/wunsch")"
+    seite_a=$("${CURL[@]}" -b "$jar/a" "$BASE/party")
+    grep -q "$wunschname" <<<"$seite_a" && pass "Wunsch steht bei den Gaesten" || fail "Wunsch fehlt"
+    wid=$(grep -A6 "$wunschname" <<<"$seite_a" | grep -oE '/party/wunsch/[0-9]+/uebernehmen' | head -1 | grep -oE '[0-9]+')
+
+    expect "A uebernimmt den Wunsch" 303 "$(post "$jar/a" -d "csrf=$ca" "$BASE/party/wunsch/$wid/uebernehmen")"
+    seite_b=$("${CURL[@]}" -b "$jar/b" "$BASE/party")
+    grep -A4 "$wunschname" <<<"$seite_b" | grep -q 'Test A' && pass "B sieht, dass A uebernommen hat" || fail "Uebernahme nicht sichtbar"
+    grep -qE "/party/wunsch/$wid/uebernehmen" <<<"$seite_b" && fail "Wunsch laesst sich doppelt uebernehmen" || pass "kein zweites Uebernehmen moeglich"
+
+    # B versucht es trotzdem per direktem Aufruf
+    post "$jar/b" -d "csrf=$cb" "$BASE/party/wunsch/$wid/uebernehmen" >/dev/null
+    post "$jar/b" -d "csrf=$cb" "$BASE/party/wunsch/$wid/freigeben" >/dev/null
+    "${CURL[@]}" -b "$jar/a" "$BASE/party" | grep -A4 "$wunschname" | grep -q 'Test A' \
+      && pass "B kann die Uebernahme von A nicht veraendern" || fail "B konnte fremde Uebernahme aendern"
+
+    expect "A gibt den Wunsch frei" 303 "$(post "$jar/a" -d "csrf=$ca" "$BASE/party/wunsch/$wid/freigeben")"
+    "${CURL[@]}" -b "$jar/a" "$BASE/party" | grep -qE "/party/wunsch/$wid/uebernehmen" \
+      && pass "Wunsch ist wieder offen" || fail "Wunsch blieb belegt"
+
+    csv=$("${CURL[@]}" -b "$jar/admin" "$BASE/admin/export.csv")
+    grep -q 'Anzeigename;Anzahl' <<<"$csv" && pass "CSV-Export hat eine Kopfzeile" || fail "CSV-Export fehlerhaft"
+    grep -q 'Test A2' <<<"$csv" && pass "CSV enthaelt die Teilnehmer" || fail "CSV ohne Teilnehmer"
+
+    post "$jar/admin" -d "csrf=$cadm" "$BASE/admin/wunsch/$wid/loeschen" >/dev/null
+    "${CURL[@]}" -b "$jar/a" "$BASE/party" | grep -q "$wunschname" && fail "Wunsch nicht geloescht" || pass "Admin loescht den Wunsch"
+
+    # Plan zuruecksetzen, damit der Test nichts hinterlaesst.
+    post "$jar/admin" -d "csrf=$cadm&codename=$alt_codename&wann=$alt_wann&treffpunkt=$alt_treff&ueberraschung=$alt_ueber&ort=$alt_ort&ablauf=$alt_ablauf" "$BASE/admin/plan" >/dev/null
+    "${CURL[@]}" -b "$jar/a" "$BASE/party" | grep -q 'Testort' && fail "Plan blieb veraendert" || pass "Plan wiederhergestellt"
+
+    # Zerstoerend: nur dort, wo die Datenbank ohnehin ein Wegwerfstand ist.
+    if [ "${ADMIN_DESTRUCTIVE:-0}" = "1" ]; then
+      post "$jar/admin" -d "csrf=$cadm&bestaetigung=falsch" "$BASE/admin/alles-loeschen" >/dev/null
+      "${CURL[@]}" -b "$jar/a" "$BASE/party" | grep -q 'Test A2' \
+        && pass "Alles-Loeschen braucht das Bestaetigungswort" || fail "ohne Bestaetigung geloescht"
+      post "$jar/admin" -d "csrf=$cadm&bestaetigung=LOESCHEN" "$BASE/admin/alles-loeschen" >/dev/null
+      expect "nach Alles-Loeschen keine Sitzung mehr" 303 "$(status -b "$jar/a" "$BASE/party")"
+    fi
+  fi
+
   # Aufraeumen
   post "$jar/a" -d "csrf=$ca" "$BASE/party/eintrag/loeschen" >/dev/null
   post "$jar/b" -d "csrf=$cb" "$BASE/party/eintrag/loeschen" >/dev/null
   rest=$("${CURL[@]}" -b "$jar/a" "$BASE/party")
-  grep -qE 'Test A2|Test B|Testsalat' <<<"$rest" && fail "Testdaten nicht vollstaendig entfernt" || pass "Testdaten aufgeraeumt"
+  grep -qE 'Test A2|Test B|Testsalat|Testkuchen' <<<"$rest" && fail "Testdaten nicht vollstaendig entfernt" || pass "Testdaten aufgeraeumt"
 fi
 
 echo

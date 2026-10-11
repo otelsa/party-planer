@@ -9,7 +9,8 @@ Anmelden, ändern, löschen und Mitbringliste funktionieren; Inhalte des Plans s
 Die offene Seite aktualisiert sich selbst, wenn jemand anderes etwas ändert.
 Gäste stehen platzsparend als fortlaufende Liste in vier Gruppen (Kommt, Später,
 Vielleicht, Kommt nicht), Mitbringsel nach Kategorie.
-Noch nicht gebaut: Wunschliste, Einzel-Einladungen, Admin-Bereich, automatische Löschung.
+Wunschliste und Adminbereich sind gebaut.
+Noch nicht gebaut: Einzel-Einladungen für Externe, automatische Löschung nach der Feier.
 
 ## Aufbau
 
@@ -67,6 +68,9 @@ wie das Cookie).
 | `/party/...` | Formulare (POST, mit CSRF-Token) |
 | `/party/stand` | winziges JSON mit dem Änderungsstand, vom Browser im Takt abgefragt |
 | `/party/listen` | nur der veränderliche Ausschnitt (Zahlen und Listen) zum Austauschen |
+| `/party/wunsch/<id>/uebernehmen` · `/freigeben` | Wunsch übernehmen und wieder abgeben |
+| `/admin/<admin-token>` | setzt das Admin-Cookie, 303 auf `/admin` |
+| `/admin` | Plan pflegen, Wunschliste, Teilnehmer und Mitbringsel aufräumen, CSV, alles löschen |
 | `/e/<token>/` | 301 auf die Variante ohne Schrägstrich |
 | `/e/*.css` | Stylesheets, ohne Token im Pfad (sonst stünden sie im Referer) |
 | `/e/<alles andere>` | neutrale Hinweisseite mit Status 200 |
@@ -115,9 +119,31 @@ Fingerabdruck aus Anzahl und jüngster Änderungszeit. Ändert er sich, holt das
 - Bewusst kein Server-Sent-Events oder WebSocket: Die App läuft mit zwei Gunicorn-Workern,
   die Dauerverbindungen blockieren würden. Bei 40 Gästen ist Nachfragen sparsamer.
 
+## Wunschliste
+
+Wünsche legen Organisatoren an. Jeder angemeldete Gast kann einen offenen Wunsch
+übernehmen und wieder freigeben; die Übernahme läuft in einer einzigen SQL-Anweisung
+(`WHERE uebernommen_von IS NULL`), damit zwei gleichzeitige Klicks nicht beide gewinnen.
+Freigeben darf nur, wer übernommen hat — oder ein Organisator.
+
+## Adminbereich
+
+Eigener Link `https://otelsa.de/admin/<admin-token>`, **nie in der Gruppe teilen**.
+Der Token steht auf dem Server in `/etc/otelsa-party-admin-token`; `scripts/deploy.sh`
+legt ihn beim ersten Lauf an und zeigt den Link.
+
+- **Plan pflegen:** Codename, Wann, Treffpunkt, Überraschung, Ort, Ablauf. Die Gastseite
+  zeigt sofort die gepflegten Werte; solange nichts gepflegt ist, stehen dort Platzhalter.
+- **Wunschliste:** anlegen, löschen, fremde Übernahme freigeben.
+- **Aufräumen:** doppelte Teilnehmer und fremde Mitbringsel löschen.
+- **Export** als CSV, **Alles löschen** nur nach Eingabe des Worts `LOESCHEN`.
+- Ohne gültiges Admin-Cookie antwortet `/admin` mit **404** — von außen nicht von einer
+  nicht existierenden Seite zu unterscheiden.
+
 ## Noch offen
 
 - Echte Daten: Datum, Uhrzeit, Ort, Ablauf, Codename
 - Entscheidung Pfad → eigene Subdomain `party.otelsa.de` für den echten Betrieb
-- Backend (Python + SQLite, systemd) laut Doc, falls aus dem Prototyp eine App wird
+- Einzel-Einladungslinks für Externe
+- Automatische Löschung nach der Feier (Löschdatum, täglicher Job)
 - Datenschutzhinweis und Löschfrist
