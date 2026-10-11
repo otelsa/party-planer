@@ -53,6 +53,10 @@ grep -q 'Gesamt\|gesamt' <<<"$page" && pass "Gesamtzahl vorhanden" || fail "Gesa
 grep -q 'Anzeigen als' <<<"$page"   && pass "Feld 'Anzeigen als'" || fail "Feld 'Anzeigen als' fehlt"
 grep -q 'Anzahl' <<<"$page"         && pass "Feld 'Anzahl'" || fail "Feld 'Anzahl' fehlt"
 grep -qi 'cookie' <<<"$page"        && pass "Seite erklaert den Zugang ohne Cookie" || fail "Hinweis zum Zugang fehlt"
+grep -q 'PIN für Änderungen' <<<"$page" && pass "PIN wird beim Anmelden gesetzt" || fail "PIN-Feld fehlt"
+grep -c 'field--pin' <<<"$page" | grep -qE '^[3-9]' && pass "PIN zweimal eingeben plus Freischalten" || fail "zu wenige PIN-Felder"
+grep -q 'Freischalten' <<<"$page"   && pass "Eintrag laesst sich mit PIN freischalten" || fail "Freischalten fehlt"
+grep -qi 'persönlichen Link\|/me/' <<<"$page" && fail "persoenlicher Link ist nicht mehr vorgesehen" || pass "kein persoenlicher Link mehr"
 grep -q 'aria-label="Bearbeiten"' <<<"$page" && grep -q 'aria-label="Löschen"' <<<"$page" \
   && pass "eigene Eintraege haben Bearbeiten und Loeschen" || fail "Aktionen an eigenen Eintraegen fehlen"
 own=$(grep -c 'class="is-own"' <<<"$page")

@@ -29,18 +29,25 @@ sudo scripts/deploy.sh
 
 ## Wie Teilnehmer erkannt werden
 
-**Ohne Cookie, ohne Geräte-ID.** Die Identität ist der persönliche Link `/me/<token>`
-(128 Bit Zufall). Wer ihn hat, sieht und ändert genau seine eigenen Einträge; alles andere
-ist nur lesbar. Jeder eigene Eintrag trägt in den Listen ein Bearbeiten- und ein Löschsymbol.
+**Ein Gruppenlink für alle, kein Cookie, keine persönlichen Links, keine Geräte-ID.**
+Beim Anmelden wählt jeder Gast eine vierstellige PIN. Zum Ändern: denselben Link öffnen,
+den eigenen Eintrag antippen, PIN eingeben — danach erscheinen Bearbeiten und Löschen.
+Funktioniert auf jedem Gerät.
 
-- **Wiederkommen:** Der Link wird nach dem Anmelden angezeigt, mit „an mich selbst schicken“.
-- **Verloren:** Ein Admin erzeugt einen neuen, der alte verfällt.
-- **Bewusst nicht benutzt:** Cookies, `localStorage` (rechtlich wie ein Cookie und bräuchte
-  JavaScript) und Geräte-Fingerprints (unzuverlässig und datenschutzrechtlich schlechter).
-- **Preis:** Der Token steht in der Adresszeile und damit im Browserverlauf des Geräts.
+Das Formular hat nur drei Angaben: **Anzeigen als**, **Anzahl** (Personen insgesamt,
+die Person selbst mitgezählt) und die **PIN** (zweimal).
 
-Im Anmeldeformular gibt es nur **„Anzeigen als“** und **„Anzahl“** (Personen insgesamt,
-die Person selbst mitgezählt). Die Gesamtzahl auf der Seite summiert diese Angaben.
+| Fall | Lösung |
+|---|---|
+| PIN vergessen | Organisator setzt sie zurück oder korrigiert den Eintrag |
+| Gast bringt jemanden mit | Anzahl erhöhen oder einen zweiten Eintrag anlegen |
+| Externe ohne Gruppenzugang | Einzel-Einladungslink `/i/<token>`, einmal nutzbar, 14 Tage gültig |
+
+**Was die PIN leistet und was nicht.** Sie verhindert, dass ein anderer Gast einen fremden
+Eintrag versehentlich oder aus Jux ändert. Sie ist kein Schutz gegen jemanden, der die
+Datenbank hat: vier Ziffern sind auch als Hash schnell durchprobiert. Deshalb:
+PIN nur gehasht speichern, wenige Fehlversuche je Eintrag und Stunde zulassen,
+und keine Daten auf der Seite, die mehr Schutz bräuchten.
 
 ## Wie der Zugang funktioniert
 

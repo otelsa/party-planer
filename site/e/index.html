@@ -74,9 +74,23 @@
         </label>
       </fieldset>
 
+      <fieldset>
+        <legend>PIN für Änderungen</legend>
+        <p class="note">Vier Ziffern, die du dir merkst. Damit änderst du später deinen Eintrag —
+          von jedem Gerät, ohne eigenen Link.</p>
+        <div class="choices">
+          <label class="labelled labelled--inline">PIN
+            <input class="field field--pin" type="text" inputmode="numeric" pattern="[0-9]*" maxlength="4" value="••••" disabled>
+          </label>
+          <label class="labelled labelled--inline">Wiederholen
+            <input class="field field--pin" type="text" inputmode="numeric" pattern="[0-9]*" maxlength="4" value="••••" disabled>
+          </label>
+        </div>
+      </fieldset>
+
       <p id="proto-hint" class="note">Im Prototyp sind alle Felder gesperrt.</p>
-      <p class="note">Diese Seite benutzt keine Cookies. Nach dem Speichern bekommst du deinen
-        persönlichen Link — damit kommst du jederzeit zurück und änderst deine Angaben.</p>
+      <p class="note">Diese Seite benutzt keine Cookies. Du brauchst nur diesen einen Link
+        aus der Gruppe und deine PIN.</p>
       <div class="actions">
         <span class="ot-btn ot-btn--primary" aria-disabled="true">Speichern</span>
         <span class="ot-btn" aria-disabled="true">Meine Daten löschen</span>
@@ -84,16 +98,21 @@
     </form>
   </section>
 
-  <section class="ot-card" id="zugang">
-    <h2 class="ot-card__title">Dein Zugang <span class="ot-card__note">statt Cookie</span></h2>
-    <p class="note">Mit diesem persönlichen Link kommst du zurück und änderst deine Angaben —
-      auch von einem anderen Gerät. Nur du hast ihn. Bitte nicht weitergeben.</p>
-    <p class="link"><code>https://otelsa.de/me/&lt;dein-link&gt;</code></p>
-    <div class="actions">
-      <span class="ot-btn ot-btn--primary" aria-disabled="true">An mich selbst schicken</span>
-      <span class="ot-btn" aria-disabled="true">Link kopieren</span>
-    </div>
-    <p class="note">Verloren? Frag einen der Organisatoren, dann bekommst du einen neuen.</p>
+  <section class="ot-card" id="aendern">
+    <h2 class="ot-card__title">Später etwas ändern <span class="ot-card__note">ohne Cookie, ohne eigenen Link</span></h2>
+    <p class="note">Denselben Link aus der Gruppe öffnen, unten in der Liste auf deinen Eintrag
+      tippen und die PIN eingeben. Dann erscheinen Bearbeiten und Löschen.</p>
+    <details class="unlock">
+      <summary>Beispiel: Eintrag freischalten</summary>
+      <div class="unlock__body">
+        <p class="note">Eintrag „Anna K.“</p>
+        <label class="labelled labelled--inline">PIN
+          <input class="field field--pin" type="text" inputmode="numeric" pattern="[0-9]*" maxlength="4" disabled>
+        </label>
+        <span class="ot-btn ot-btn--primary" aria-disabled="true">Freischalten</span>
+      </div>
+    </details>
+    <p class="note">PIN vergessen? Sag einem der Organisatoren Bescheid, dann wird sie zurückgesetzt.</p>
   </section>
 
   <section class="ot-card" id="zahlen">
@@ -110,12 +129,13 @@
     <h2 class="ot-card__title">Wer kommt <span class="ot-card__note">23 Zusagen · 4 vielleicht</span></h2>
     <ul class="ot-list guests">
       <li class="is-own"><span class="guest">Anna K.</span> <span class="ot-tag ot-tag--ok">ab Beginn</span>
-        <span class="ot-meta">2 Personen · dein Eintrag</span>
+        <span class="ot-meta">2 Personen · mit deiner PIN freigeschaltet</span>
         <span class="rowacts">
           <span class="iconbtn" role="button" aria-disabled="true" aria-label="Bearbeiten" title="Bearbeiten"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16z"/><path d="M14 5l4 4"/></svg></span>
           <span class="iconbtn" role="button" aria-disabled="true" aria-label="Löschen" title="Löschen"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 7h14"/><path d="M9 7V5h6v2"/><path d="M7 7l1 13h8l1-13"/></svg></span>
         </span></li>
-      <li><span class="guest">Bernd</span> <span class="ot-tag ot-tag--ok">ab Beginn</span></li>
+      <li><span class="guest">Bernd</span> <span class="ot-tag ot-tag--ok">ab Beginn</span>
+        <span class="rowacts"><span class="ot-btn ot-btn--quiet" aria-disabled="true">Ändern</span></span></li>
       <li><span class="guest">Clara M.</span> <span class="ot-tag">ab ca. 19:30</span> <span class="ot-meta">eingeladen von Anna K.</span></li>
       <li><span class="guest">Dirk S.</span> <span class="ot-tag ot-tag--warn">vielleicht</span></li>
       <li><span class="guest">Eva &amp; Tom</span> <span class="ot-tag ot-tag--ok">ab Beginn</span></li>
