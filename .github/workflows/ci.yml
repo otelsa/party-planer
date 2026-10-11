@@ -1,0 +1,83 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  lint:
+    name: Quellchecks
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Statische Checks
+        run: bash tests/static-checks.sh
+
+      - name: ShellCheck
+        run: shellcheck -S warning scripts/*.sh tests/*.sh
+
+      - name: HTML- und CSS-Validierung (Nu Html Checker)
+        run: pipx run html5validator==0.4.2 --root site --also-check-css --format text
+
+  server:
+    name: nginx-Verhalten (Debian trixie)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    container: debian:trixie
+    env:
+      # Testtoken nur fuer die CI; der echte steht auf dem Server in /etc/otelsa-party-token.
+      PARTY_TOKEN: ci-test-token-0123456789abcdef
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Pakete wie in Produktion
+        run: |
+          apt-get update -qq
+          DEBIAN_FRONTEND=noninteractive apt-get install -y -qq --no-install-recommends \
+            nginx curl ca-certificates >/dev/null
+          nginx -v
+
+      - name: Ausrollen wie auf dem Server
+        run: |
+          printf '%s\n' "$PARTY_TOKEN" > /etc/otelsa-party-token
+          chmod 600 /etc/otelsa-party-token
+          OTELSA_NO_RELOAD=1 bash scripts/deploy.sh
+          # CI-Serverblock (kein TLS) anstelle der Produktions-vHosts
+          install -m 0644 deploy/nginx/ci/nginx.conf /etc/nginx/nginx.conf
+          rm -f /etc/nginx/sites-enabled/default
+
+      - name: nginx-Konfiguration pruefen
+        run: nginx -t
+
+      - name: nginx starten
+        run: nginx
+
+      - name: Verhaltenstests
+        run: BASE=http://127.0.0.1:8080 TOKEN="$PARTY_TOKEN" bash tests/integration.sh
+
+      - name: Token darf in keinem Log stehen
+        run: |
+          # Doppelt gesichert, unabhaengig von den Tests oben.
+          if grep -rq "$PARTY_TOKEN" /var/log/nginx/; then
+            echo "Token in einem Log gefunden:"; grep -rl "$PARTY_TOKEN" /var/log/nginx/; exit 1
+          fi
+          echo "kein Token in /var/log/nginx"
+
+      - name: Logs bei Fehlschlag
+        if: failure()
+        run: tail -n 40 /var/log/nginx/error.log /var/log/nginx/access.log /var/log/nginx/party.log || true

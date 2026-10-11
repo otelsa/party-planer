@@ -42,6 +42,20 @@ fail2ban-Sperre aus. Preis dafür ist, dass `/e/` als existierender Bereich erke
 Tokens stehen in keinem Log: `/e/`-Pfade werden im Hauptlog maskiert, die Partyseite
 schreibt zusätzlich nach `/var/log/nginx/party.log` mit `/e/<token>` statt dem Wert.
 
+## Tests
+
+```bash
+bash tests/static-checks.sh                      # Quellen (CSP, neutrale Vorschau, kein Token im Repo)
+sudo env BASE=https://otelsa.de RESOLVE=127.0.0.1 \
+  TOKEN="$(sudo cat /etc/otelsa-party-token)" bash tests/integration.sh
+```
+
+Die CI (`.github/workflows/ci.yml`) baut in einem Debian-trixie-Container denselben
+nginx-Aufbau mit einem Testtoken auf und prüft das komplette Verhalten: Zugang nur mit
+Token, neutrale Hinweisseite statt 404, Stylesheets, Weiterleitung, abgewiesene Methoden,
+Sicherheits-Kopfzeilen, nichts Verräterisches in der Vorschau, Rate-Limit und dass in
+keinem Log ein Token steht.
+
 ## Noch offen
 
 - Echte Daten: Datum, Uhrzeit, Ort, Ablauf, Codename

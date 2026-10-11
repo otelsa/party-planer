@@ -27,9 +27,15 @@ done
 
 install -o root -g root -m 0644 "$REPO/deploy/nginx/otelsa-party-headers.conf" \
   /etc/nginx/snippets/otelsa-party-headers.conf
+# Log-Formate und Maskierung; die nginx.conf bindet sie im http-Block ein.
+install -o root -g root -m 0644 "$REPO/deploy/nginx/log-format.conf" \
+  /etc/nginx/snippets/otelsa-party-log.conf
 sed "s/@TOKEN@/$TOKEN/g" "$REPO/deploy/nginx/otelsa-party.conf.template" > /tmp/otelsa-party.conf
 install -o root -g root -m 0640 /tmp/otelsa-party.conf /etc/nginx/snippets/otelsa-party.conf
 rm -f /tmp/otelsa-party.conf
 
-nginx -t -q && systemctl reload nginx
+nginx -t -q
+if [ -z "${OTELSA_NO_RELOAD:-}" ]; then
+  systemctl reload nginx
+fi
 echo "Deploy ok. Seite: https://otelsa.de/e/$TOKEN"
